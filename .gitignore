@@ -1,0 +1,27 @@
+# Local credentials. Only empty example templates may be shared.
+.env
+.env.*
+!.env.example
+
+# Python environments and caches.
+.venv/
+.uv-cache/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Build and local experiment outputs.
+dist/
+build/
+*.egg-info/
+outputs/
+capture*.json
+*_capture.json
+debugpy*.log
+.course_build/
+
+# OS-generated metadata.
+.DS_Store
+Thumbs.db

@@ -1,0 +1,47 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "LLM: Inspect HTTP (offline)",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "eaas_llm_inference.inspect_http_request",
+            "python": "${workspaceFolder}/.venv/bin/python",
+            "windows": {
+                "python": "${workspaceFolder}/.venv/Scripts/python.exe"
+            },
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "envFile": "",
+            "preLaunchTask": "uv: sync",
+            "stopOnEntry": true,
+            "justMyCode": true
+        },
+        {
+            "name": "LLM: NVIDIA inference (live)",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "eaas_llm_inference.nvidia_inference",
+            "python": "${workspaceFolder}/.venv/bin/python",
+            "windows": {
+                "python": "${workspaceFolder}/.venv/Scripts/python.exe"
+            },
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "envFile": "",
+            "preLaunchTask": "uv: sync",
+            "stopOnEntry": true,
+            "justMyCode": true
+        },
+        {
+            "name": "LLM: Attach to uv/debugpy (5678)",
+            "type": "debugpy",
+            "request": "attach",
+            "connect": {
+                "host": "127.0.0.1",
+                "port": 5678
+            },
+            "justMyCode": true
+        }
+    ]
+}

@@ -1,0 +1,20 @@
+# Local Python environment and caches.
+.venv/
+.uv-cache/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+dist/
+build/
+*.egg-info/
+
+# Personal credentials. Only the empty field template is shareable.
+.env
+.env.*
+!.env.example
+
+# Local experiment outputs.
+outputs/
+capture*.json
+*_capture.json

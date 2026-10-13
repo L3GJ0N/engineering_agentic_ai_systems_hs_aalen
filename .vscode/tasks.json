@@ -1,0 +1,21 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "uv: sync llm_inference",
+            "type": "process",
+            "command": "uv",
+            "args": [
+                "sync"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/llm_inference"
+            },
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "silent",
+                "panel": "dedicated"
+            }
+        }
+    ]
+}
