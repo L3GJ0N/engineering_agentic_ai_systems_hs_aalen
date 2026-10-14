@@ -7,7 +7,7 @@ This repository contains the shareable Python examples for **Engineering Agentic
 - Explain what happens beneath the tools: HTTP, JSON, tokenization, inference, reasoning, evaluation and eventually agent loops. Keep the opening examples small enough to follow line by line.
 - The course has no student compute budget and must work without a local GPU or paid subscription. Provide usable offline exercises where provider account access is unavailable. Do not promise that a provider's hosted access stays free.
 - Students use Windows, Ubuntu/other Linux distributions and macOS. Give menu/button instructions first, with platform-specific keyboard shortcuts as optional aids. Treat WSL as its own Linux environment.
-- The existing NVIDIA example is deliberately a direct Requests call. Do not introduce a provider SDK, framework or broad abstraction without a teaching reason or user request.
+- Show hosted inference both ways: a direct Requests call that exposes the HTTP mechanics, and the same request through the provider's SDK (currently `nvidia_inference.py` and `nvidia_inference_openai.py` with the OpenAI SDK). Keep each SDK example sending the same request as its Requests counterpart, with automatic retries switched off, so students can compare them line by line. Do not introduce frameworks or broad abstractions without a teaching reason or user request.
 
 ## Python and tooling
 

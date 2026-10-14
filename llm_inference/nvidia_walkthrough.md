@@ -455,7 +455,7 @@ NVIDIA's Python example uses the `openai` package. [nvidia_inference_openai.py](
 uv run nvidia-inference-openai
 ```
 
-Read it side by side with [nvidia_inference.py](src/eaas_llm_inference/nvidia_inference.py). The prompt, the settings and the private `.env` reading are identical; only the client library differs.
+Read it side by side with [nvidia_inference.py](src/eaas_llm_inference/nvidia_inference.py). The prompt, the settings and the private `.env` reading are identical; only the client library differs. In VS Code, **LLM: NVIDIA inference via OpenAI SDK (live)** runs it under the debugger; see the [debugging guide](debugging.md#7-debug-the-live-request-safely).
 
 | Step | Requests starter | OpenAI SDK |
 |---|---|---|

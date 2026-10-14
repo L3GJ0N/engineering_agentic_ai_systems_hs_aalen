@@ -167,6 +167,8 @@ Then, with your private `.env` configured as described in the [project README](R
 
 If NVIDIA returns an error status, the debugger normally stops at `raise_for_status()` because **Uncaught Exceptions** is enabled in the **Breakpoints** view; inspect `response.status_code` and `response.text` there.
 
+**LLM: NVIDIA inference via OpenAI SDK (live)** debugs the [SDK version](nvidia_walkthrough.md#14-compare-the-same-request-with-the-openai-sdk) the same way. There, the key is also stored in the client object: expanding `client` in **Variables** shows `client.api_key`. Set a breakpoint on the final `print(...)` and inspect `completion`, the parsed answer as typed objects. An error status stops the debugger at the `client.chat.completions.create(` call with an exception such as `openai.RateLimitError`, whose message includes NVIDIA's explanation.
+
 [What comes back?](http_and_requests.md#7-what-comes-back) explains every part of the response object, and the [response inspection](nvidia_walkthrough.md#10-inspect-one-response) explains each body field. To keep a key-free record of one exchange without the debugger, run `uv run capture-nvidia-response` ([project README](README.md#run-the-project)).
 
 ## 8. Other ways to start: current file and attach
@@ -197,7 +199,7 @@ The repository-root [configuration](../.vscode/launch.json) provides the same la
 
 | File or setting | Role |
 |---|---|
-| [launch.json](.vscode/launch.json) | Defines the offline and live module launches, plus the attach configuration. |
+| [launch.json](.vscode/launch.json) | Defines the offline launch, the two live launches (Requests and OpenAI SDK), plus the attach configuration. |
 | `"type": "debugpy"` | Uses Microsoft's Python debugger. |
 | `"request": "launch"` | Starts a new Python process under the debugger; `"attach"` connects to a running one. |
 | `"module": "eaas_llm_inference.nvidia_inference"` | Equivalent module target to `python -m ...`; the module's `__main__` guard calls `main()`. |

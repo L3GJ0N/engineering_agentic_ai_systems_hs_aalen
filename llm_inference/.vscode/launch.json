@@ -34,6 +34,22 @@
             "justMyCode": true
         },
         {
+            "name": "LLM: NVIDIA inference via OpenAI SDK (live)",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "eaas_llm_inference.nvidia_inference_openai",
+            "python": "${workspaceFolder}/.venv/bin/python",
+            "windows": {
+                "python": "${workspaceFolder}/.venv/Scripts/python.exe"
+            },
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "envFile": "",
+            "preLaunchTask": "uv: sync",
+            "stopOnEntry": true,
+            "justMyCode": true
+        },
+        {
             "name": "LLM: Attach to uv/debugpy (5678)",
             "type": "debugpy",
             "request": "attach",

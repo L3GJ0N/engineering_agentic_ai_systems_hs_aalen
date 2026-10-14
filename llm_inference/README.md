@@ -114,7 +114,7 @@ The key-loading path is intentionally tied to this course checkout and uv's edit
 
 ## Debug in VS Code
 
-The repository folder and this project folder both provide VS Code launch configurations: **LLM: Inspect HTTP (offline)**, **LLM: NVIDIA inference (live)** and **LLM: Attach to uv/debugpy (5678)**. The short route:
+The repository folder and this project folder both provide VS Code launch configurations: **LLM: Inspect HTTP (offline)**, **LLM: NVIDIA inference (live)**, **LLM: NVIDIA inference via OpenAI SDK (live)** and **LLM: Attach to uv/debugpy (5678)**. The short route:
 
 1. Install Microsoft's **Python** and **Python Debugger** extensions (the workspace recommends them) and run `uv sync` once.
 2. Open [inspect_http_request.py](src/eaas_llm_inference/inspect_http_request.py) and click the editor gutter beside a line to set a breakpoint.
