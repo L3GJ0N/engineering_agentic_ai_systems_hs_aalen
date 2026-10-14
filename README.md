@@ -9,6 +9,7 @@ Python teaching examples for the master's course **Engineering Agentic AI System
 - One direct NVIDIA Build inference request using Requests.
 - An offline HTTP request inspection that needs no account or key.
 - A capture of one complete live exchange, printed and saved without credentials.
+- The same request sent through the OpenAI SDK, to compare with the direct Requests call.
 - Detailed HTTP, JSON, credential configuration and NVIDIA account walkthroughs.
 - VS Code launch and attach configurations for Windows, Linux and macOS, with a debugging guide.
 

@@ -208,7 +208,9 @@ The [Build page](https://build.nvidia.com/nvidia/nemotron-3.5-lightning-30b-a3b)
 
 These tabs change the client example. Python and Node use their respective runtimes; Shell uses a command-line HTTP client; LangChain adds a framework abstraction. All can address the same remote service. Selecting Python does not download a Python implementation of the neural network.
 
-NVIDIA's Python example imports `OpenAI`, but explicitly sets a NVIDIA `base_url`. The library is an API client; the URL determines this request's destination. Our script exposes the HTTP call directly through `requests`. The sample's `extra_body` passes additional JSON fields through the SDK; our raw JSON places `chat_template_kwargs` directly in the body. [NVIDIA's client examples](https://build.nvidia.com/nvidia/nemotron-3.5-lightning-30b-a3b).
+NVIDIA's Python example imports `OpenAI`, but explicitly sets a NVIDIA `base_url`. The library is an API client; the URL determines this request's destination. Our script exposes the HTTP call directly through `requests`. The sample's `extra_body` passes additional JSON fields through the SDK; our raw JSON places `chat_template_kwargs` directly in the body. [NVIDIA's client examples](https://build.nvidia.com/nvidia/nemotron-3.5-lightning-30b-a3b). [Section 14](#14-compare-the-same-request-with-the-openai-sdk) sends our request through that SDK and compares both clients.
+
+When you are signed in, the page can fill your real key into its example code. Copy the code structure, never that `api_key` value: it belongs only in your private `.env`.
 
 ## 4. What the model labels mean
 
@@ -444,3 +446,37 @@ Free hosted access is meant for evaluation and prototyping. NVIDIA describes its
 **Can you see how close you are to the limit?** Some providers send rate-limit headers, such as `x-ratelimit-remaining-requests`, with every response. NVIDIA documents no such header and no endpoint that reports the remaining quota, so on the free tier you typically learn about a limit only when a request is rejected, or from the account page. Whether NVIDIA's responses contain such headers anyway can be checked: `uv run capture-nvidia-response` prints every response header and ends with one line naming any `Retry-After`, rate-limit or `NVCF-` headers. It also saves runs that ended without any response, together with the time waited. Every run is a real request that counts against your limits: space runs out and never retry in a loop.
 
 The starter has no retry logic. Polling pending results, honoring rate limits and retrying belong in later, more robust clients.
+
+## 14. Compare: the same request with the OpenAI SDK
+
+NVIDIA's Python example uses the `openai` package. [nvidia_inference_openai.py](src/eaas_llm_inference/nvidia_inference_openai.py) sends our starter's request through that SDK:
+
+```console
+uv run nvidia-inference-openai
+```
+
+Read it side by side with [nvidia_inference.py](src/eaas_llm_inference/nvidia_inference.py). The prompt, the settings and the private `.env` reading are identical; only the client library differs.
+
+| Step | Requests starter | OpenAI SDK |
+|---|---|---|
+| Destination | Full URL in the call | `base_url`; the SDK appends `/chat/completions` |
+| Credential | We build `Authorization: Bearer ...` | `api_key=`; the SDK builds the same header |
+| Body | One `json=` dictionary | Keyword arguments; fields outside OpenAI's schema, such as `chat_template_kwargs`, go into `extra_body` and are merged into the same JSON body |
+| Other headers | Requests' four defaults, such as `User-Agent: python-requests/...` | `User-Agent: OpenAI/Python ...` plus `X-Stainless-*` headers that report the SDK version, operating system, CPU architecture and Python version |
+| Status code | `response.status_code` | Not shown on success; available through `client.chat.completions.with_raw_response`. An error status raises an exception such as `openai.RateLimitError` |
+| Error explanation | The starter prints `response.text` | Included in the exception message |
+| Answer | `result["choices"][0]["message"]["content"]` on dictionaries | `completion.choices[0].message.content` on typed objects |
+| Timeout | `timeout=60` | Default read timeout 600 s; our script sets 60 |
+| Retries | None | Default: 2 automatic retries on 408, 409, 429 and 5xx; our script sets `max_retries=0` |
+| Implicit configuration | None | Reads environment variables such as `OPENAI_API_KEY` and `OPENAI_BASE_URL` when values are not passed |
+| Dependencies | `requests` | `openai`, plus `httpx2`, `pydantic`, `anyio`, `jiter` and others |
+
+The defaults were read from `openai` 3.29.0 on 14 October 2026; check them again after an upgrade.
+
+**"OpenAI" names the API format, not the destination.** NVIDIA's service accepts the OpenAI-compatible chat-completions format, so this client library can talk to it. `base_url` decides where the request goes: nothing is sent to OpenAI, and no OpenAI account is involved. Compatible does not mean identical: NVIDIA-specific fields need `extra_body`, and accepted values follow NVIDIA's [endpoint reference](https://docs.api.nvidia.com/nim/reference/nvidia-nemotron-3-5-lightning-30b-a3b-infer).
+
+**Automatic retries matter on the free tier.** With its defaults, the SDK silently repeats a request when NVIDIA answers 429 or a 5xx. In an offline test with a mocked 429 response, one call produced three requests within about a second, and the program reported only the final failure. Each request counts against your limit. Our script therefore sets `max_retries=0`, so both examples send exactly one request.
+
+**What stays the same.** Both programs run locally, send one HTTPS request with a JSON body to the same endpoint and wait while NVIDIA's model runs. The SDK saves code; it changes neither the essential message nor where the model runs. Use the Requests starter to see the HTTP mechanics, and an SDK when an application benefits from typed responses, built-in retries and streaming helpers.
+
+NVIDIA's own example also enables thinking, requests up to 16,384 tokens and streams the answer with `stream=True`, printing reasoning text as it arrives. Streaming and reasoning output are separate topics for a later example.

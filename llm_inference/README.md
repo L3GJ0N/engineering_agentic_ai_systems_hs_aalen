@@ -22,7 +22,7 @@ uv sync
 uv run inspect-http-request
 ```
 
-`uv sync` prepares the local `.venv` with the resolved dependencies and installs this project in **editable mode**: imports use the Python files in `src/`, so edits to their code take effect on the next run. It also installs the three command entry points declared in `pyproject.toml`. `uv run` prepares the environment as needed and runs a command using it. No manual environment activation is needed. These commands update `uv.lock` when project requirements require it; a new package release alone does not cause an upgrade. Add `--locked` when an outdated or missing lockfile should be an error, for example in CI. Initial setup needs network access when Python or packages are not already available. The inspection script itself sends no network request and needs no key. [uv environment and lock behavior](https://docs.astral.sh/uv/concepts/projects/sync/).
+`uv sync` prepares the local `.venv` with the resolved dependencies and installs this project in **editable mode**: imports use the Python files in `src/`, so edits to their code take effect on the next run. It also installs the four command entry points declared in `pyproject.toml`. `uv run` prepares the environment as needed and runs a command using it. No manual environment activation is needed. These commands update `uv.lock` when project requirements require it; a new package release alone does not cause an upgrade. Add `--locked` when an outdated or missing lockfile should be an error, for example in CI. Initial setup needs network access when Python or packages are not already available. The inspection script itself sends no network request and needs no key. [uv environment and lock behavior](https://docs.astral.sh/uv/concepts/projects/sync/).
 
 The Python code retrieves the credential from your private **`.env`** in the project root, beside `pyproject.toml`. The tracked [.env.example](.env.example) declares only the configuration field, with an empty value:
 
@@ -45,6 +45,14 @@ uv run capture-nvidia-response
 ```
 
 It sends the same single request, then prints the request as it was sent and the complete response: status, headers, timing and the full JSON body. A final line names any rate-limit headers in the response. It also saves this capture under a timestamped name in `outputs/`, which Git ignores; a run that ends without any response, such as a timeout, is saved too. Header values that can carry credentials, such as `Authorization`, are replaced by `<removed>`, and the script refuses to print or save anything that still contains your key, so a capture can be shown in class. Each run is one more live request. [What comes back?](http_and_requests.md#7-what-comes-back) explains every part of the response, and [the free endpoint's limits](nvidia_walkthrough.md#13-understand-the-free-endpoints-limits) explains what a failure tells you.
+
+NVIDIA's own Python example uses the OpenAI SDK instead of Requests. To compare both clients with the same request, run:
+
+```console
+uv run nvidia-inference-openai
+```
+
+It sends the starter's request through the `openai` package, with automatic retries switched off so that it sends exactly one request. [The comparison](nvidia_walkthrough.md#14-compare-the-same-request-with-the-openai-sdk) explains what the SDK does for you and what it changes.
 
 Keep `.env` in this project root. The code explicitly resolves that root from its location in `src/eaas_llm_inference/`; see [the configuration explanation](http_and_requests.md#52-read-our-local-configuration-one-line-at-a-time). Neither command needs a key in a command-line argument, and the live starter does not use uv's `--env-file` option: its Python code explicitly reads `.env` with `dotenv_values`.
 
@@ -71,6 +79,7 @@ llm_inference/
             nvidia_inference.py         one live inference request
             inspect_http_request.py     inspect a fake request without sending it
             capture_nvidia_response.py  print and save a key-free live exchange
+            nvidia_inference_openai.py  the live request through the OpenAI SDK
 ```
 
 The project accepts Python 3.11 or newer; `.python-version` selects 3.13 for the usual course workflow. uv can use a suitable existing interpreter or obtain one when needed. [Python selection](https://docs.astral.sh/uv/concepts/python-versions/#python-version-files).
@@ -88,6 +97,7 @@ The project accepts Python 3.11 or newer; `.python-version` selects 3.13 for the
 | `inspect-http-request` | `main()` in [inspect_http_request.py](src/eaas_llm_inference/inspect_http_request.py) |
 | `nvidia-inference` | `main()` in [nvidia_inference.py](src/eaas_llm_inference/nvidia_inference.py) |
 | `capture-nvidia-response` | `main()` in [capture_nvidia_response.py](src/eaas_llm_inference/capture_nvidia_response.py) |
+| `nvidia-inference-openai` | `main()` in [nvidia_inference_openai.py](src/eaas_llm_inference/nvidia_inference_openai.py) |
 
 For example, `nvidia-inference = "eaas_llm_inference.nvidia_inference:main"` means "import this module and call its `main` function." The launcher is created during installation. `uv run` selects the environment and runs that launcher. NVIDIA inference starts only when the function reaches `requests.post(...)` and NVIDIA accepts the request.
 
@@ -97,6 +107,7 @@ You can also run the modules explicitly. Python's `-m` option finds an installed
 uv run python -m eaas_llm_inference.inspect_http_request
 uv run python -m eaas_llm_inference.nvidia_inference
 uv run python -m eaas_llm_inference.capture_nvidia_response
+uv run python -m eaas_llm_inference.nvidia_inference_openai
 ```
 
 The key-loading path is intentionally tied to this course checkout and uv's editable installation. Keep `.env` in the project root. A separately distributed wheel would need its own configuration-location policy.

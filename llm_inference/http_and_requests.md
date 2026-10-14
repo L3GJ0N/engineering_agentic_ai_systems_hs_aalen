@@ -130,7 +130,7 @@ Why does an independent library work? The client and server agree on two things:
 
 **API** means *Application Programming Interface*: rules for using functionality from software. This API is exposed over HTTP. Requests implements the general communication; our code supplies the NVIDIA-specific address and data. The server can be written in another language and does not need to use Requests.
 
-Consequently, another HTTP client could send an equivalent request. However, changing the host alone does not make every provider compatible: authentication, supported models and accepted fields must match that provider's contract. HTTP itself assigns no meaning to `temperature` or `max_tokens`.
+Consequently, another HTTP client could send an equivalent request; the [OpenAI SDK comparison](nvidia_walkthrough.md#14-compare-the-same-request-with-the-openai-sdk) shows one. However, changing the host alone does not make every provider compatible: authentication, supported models and accepted fields must match that provider's contract. HTTP itself assigns no meaning to `temperature` or `max_tokens`.
 
 ## 5. Map the Python arguments to the message
 
