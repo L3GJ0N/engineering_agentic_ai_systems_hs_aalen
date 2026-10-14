@@ -16,3 +16,33 @@ inspect-http-request = "eaas_llm_inference.inspect_http_request:main"
 [build-system]
 requires = ["uv_build>=0.8.19,<0.9.0"]
 build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "ruff>=0.17.0,<0.18",
+]
+
+[tool.ruff]
+line-length = 88
+# Code blocks in the Markdown guides are excerpts, some of them fragments of a
+# call. Check and format only the Python files.
+extend-exclude = ["*.md"]
+
+[tool.ruff.lint]
+select = [
+    "E", "W",  # pycodestyle: PEP 8 layout
+    "F",       # Pyflakes: unused imports, undefined names
+    "I",       # isort: import order
+    "N",       # pep8-naming
+    "D",       # pydocstyle: docstrings
+    "UP",      # pyupgrade: modern syntax for the supported Python versions
+    "ANN",     # flake8-annotations: type hints on every function
+    "B",       # flake8-bugbear: likely bugs
+    "S",       # flake8-bandit: security, e.g. HTTP requests without a timeout
+    "SIM",     # flake8-simplify
+    "PTH",     # prefer pathlib over os.path
+    "RUF",     # Ruff's own checks
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"

@@ -91,7 +91,7 @@ The project already declares `requests` and `python-dotenv`. These files have di
 
 | File or folder | What it means |
 |---|---|
-| `pyproject.toml` | Declares the project, required libraries, supported Python versions (3.11 or newer), build backend and command entry points. |
+| `pyproject.toml` | Declares the project, required libraries, supported Python versions (3.11 or newer), build backend and command entry points, plus the development tool Ruff and its rules. |
 | `uv.lock` | Records resolved dependency versions for reproducible installation. Share this file with the project. |
 | `.python-version` | Selects Python 3.13 as the project's default interpreter version. |
 | `.venv/` | Contains the local Python environment, installed dependencies and commands for our own package. uv creates it; each student has their own copy. |
@@ -217,10 +217,10 @@ The starter contains:
 from pathlib import Path
 from dotenv import dotenv_values
 
-project_root = Path(__file__).resolve().parents[2]
-env_path = project_root / ".env"
-config = dotenv_values(env_path, interpolate=False)
-api_key = config.get("NVIDIA_API_KEY")
+project_root: Path = Path(__file__).resolve().parents[2]
+env_path: Path = project_root / ".env"
+config: dict[str, str | None] = dotenv_values(env_path, interpolate=False)
+api_key: str | None = config.get("NVIDIA_API_KEY")
 ```
 
 | Expression | What happens locally |
@@ -234,6 +234,8 @@ api_key = config.get("NVIDIA_API_KEY")
 | `interpolate=False` | Keeps values literal instead of expanding expressions such as `${OTHER_VARIABLE}`. |
 | `config.get("NVIDIA_API_KEY")` | Selects the value under our chosen configuration name; returns `None` if that name is absent. |
 | The following `if` check | Stops before HTTP if the value is missing, empty or only whitespace. It does not verify the credential with NVIDIA. |
+
+The text after a colon, such as `: dict[str, str | None]`, is a **type hint**. It documents that `config` maps names to strings, and that a value can be `None`: a line containing only `NVIDIA_API_KEY` without `=` produces `None`, while `NVIDIA_API_KEY=` produces an empty string. `api_key` can therefore be `None` too, which is why the check exists. Python does not enforce hints at runtime; editors and type checkers read them. [Python type hints](https://docs.python.org/3/library/typing.html).
 
 This explicitly locates the file relative to the module in our **editable course checkout**, rather than relative to the terminal's current directory. It climbs a fixed number of directories; it does not search for configuration files or use an environment override for the key. The exercise assumes this source layout, so this path is not a configuration strategy for a standalone wheel installed elsewhere. We can make deployment configuration explicit when we reach that topic. The `.env` file remains on disk between runs, and each new run reads it again. [Reader parameters](https://bbc2.github.io/python-dotenv/reference/#dotenv.dotenv_values).
 
@@ -305,12 +307,14 @@ uv run inspect-http-request
 It uses a literal fake credential and constructs the same body as the starter. Its key operation is:
 
 ```python
-prepared = requests.Request(
+prepared: requests.PreparedRequest = requests.Request(
     method="POST", url=url, headers=headers, json=body
 ).prepare()
 ```
 
-**Preparing creates local data. This exercise sends nothing.** `Request` describes the message; `.prepare()` turns its fields into a form ready for sending. Our inspection script never calls `.post()` or `.send()`. Once Requests is installed, it works offline. Its printed components are not a packet capture: later sending can add further details, such as the host header. [Requests preparation](https://requests.readthedocs.io/en/latest/user/advanced/#prepared-requests).
+**Preparing creates local data. This exercise sends nothing.** `Request` describes the message; `.prepare()` turns its fields into a form ready for sending: it encodes the JSON body as UTF-8 bytes and adds `Content-Type` and `Content-Length`. Our inspection script never calls `.post()` or `.send()`. Once Requests is installed, it works offline. [Requests preparation](https://requests.readthedocs.io/en/latest/user/advanced/#prepared-requests).
+
+Its printed components are not a packet capture. The preview shows three headers; the live `requests.post(...)` sends more. It adds Requests' default `User-Agent`, `Accept-Encoding`, `Accept` and `Connection` headers before preparing, and the lower-level HTTP code adds `Host` while sending. The body is the same 257 bytes.
 
 In pairs:
 
@@ -327,27 +331,56 @@ Then return to the live starter. `requests.post(...)` combines preparing, sendin
 
 ## 7. What comes back?
 
-The variable `response` contains a local **Requests Response object**, with status, headers and body. It is not a model object.
+The variable `response` contains a local **Requests Response object**. Requests builds it on your laptop: it wraps NVIDIA's HTTP answer and adds what Requests recorded locally. It is not a model object. Only the message text inside the body was generated by the model.
 
-| Expression | What you inspect |
-|---|---|
-| `response.status_code` | HTTP status number. |
-| `response.headers` | Response metadata. |
-| `response.text` | Body interpreted as text. |
-| `response.json()` | Body parsed into Python objects, if valid JSON. |
+```text
+response                          requests.Response, built on the laptop
+├── request                       copy of the request we sent, including the API key
+├── elapsed                       measured on the laptop
+├── url, history, encoding        recorded or derived by Requests
+├── status_code, reason           HTTP status line, from NVIDIA's service
+├── headers                       HTTP response headers, from NVIDIA's service
+└── content                       body bytes as received
+    └── text -> json()            decoded and parsed on the laptop
+        ├── id, model, usage, ... fields added by the service
+        └── choices[0]
+            ├── finish_reason     why generation stopped
+            └── message
+                ├── role          "assistant"
+                └── content       the text the model generated
+```
 
-These inspections do not start another inference request in our non-streaming starter. `response.raise_for_status()` raises an exception for 4xx/5xx responses. It does not validate the answer or check the JSON schema. [Requests response interface](https://requests.readthedocs.io/en/latest/api/#requests.Response).
+| Expression | What you inspect | Comes from |
+|---|---|---|
+| `response.status_code`, `response.reason` | HTTP status number and phrase, for example `200` and `'OK'`. | NVIDIA's service |
+| `response.headers` | Response metadata such as `Content-Type` and `Date`. Lookup ignores upper and lower case. | NVIDIA's service |
+| `response.content` | The body as **bytes**: JSON text, not yet parsed. | NVIDIA's service; decompressed locally if needed |
+| `response.text` | The same body decoded into a Python string. | Laptop |
+| `response.json()` | The body parsed into Python dictionaries and lists, if it is valid JSON. | Laptop |
+| `response.elapsed` | Time from sending the request until the response headers were read. | Laptop clock |
+| `response.request` | The prepared request that was sent, **including the `Authorization` header with your key**. | Laptop copy |
+| `response.url`, `response.history` | Final URL and followed redirects; none here because of `allow_redirects=False`. | Laptop |
+
+**One body, three representations.** `content` holds the received bytes, `text` decodes them into a string, and `json()` parses that text into Python objects. A debugger therefore shows `response.content` as one long `b'{"id":...}'` value; expanding it lists methods of the `bytes` type, not JSON fields. The structure appears in `result` after `response.json()`.
+
+**The exchange is complete when `requests.post(...)` returns.** Requests reads the whole body before returning and keeps it in the object. Inspecting `content` or `text`, or calling `json()` again, does not start another inference request in our non-streaming starter. `response.elapsed` stops once the headers have been read; it includes network time, waiting at the service and generation, and cannot separate them.
+
+**Transport details are not tokens.** A server can announce the body size with `Content-Length`, or send the body in pieces marked by `Transfer-Encoding: chunked`, possibly compressed (`Content-Encoding: gzip`). Requests reassembles and decompresses; `response.content` is the result. In a test run in October 2026, NVIDIA's service answered with `Transfer-Encoding: chunked`. These HTTP chunks are network framing; they are neither tokenizer tokens nor streamed model output.
+
+**`response` keeps a copy of your credential.** `response.request.headers` contains the `Authorization` header with the bearer key. Do not print or share `response.request`; the [walkthrough](nvidia_walkthrough.md#10-inspect-one-response) shows how to inspect a live response without exposing the key.
+
+`response.raise_for_status()` raises an exception for 4xx/5xx responses. It does not validate the answer or check the JSON schema. [Requests response interface](https://requests.readthedocs.io/en/latest/api/#requests.Response).
 
 A **200** response indicates successful HTTP handling; **401** indicates an authentication problem; **500** indicates a server error. A **202** can mean the request was accepted but work is not yet complete. Network failures can occur before any HTTP response is received. [HTTP status semantics](https://www.rfc-editor.org/rfc/rfc9110.html#name-status-codes).
 
 Our starter expects NVIDIA's normal completed response and extracts:
 
 ```python
-result = response.json()
+result: dict[str, Any] = response.json()
 answer = result["choices"][0]["message"]["content"]
 ```
 
-`choices` is a list; `[0]` selects its first entry. `message` contains the assistant message; `content` contains its answer text. The API's data format determines this access path. A valid HTTP response can still contain an error, an incomplete job or a factually wrong answer. See [the walkthrough's response handling](nvidia_walkthrough.md#6-follow-the-python-execution) before extending the starter.
+`choices` is a list; `[0]` selects its first entry. `message` contains the assistant message; `content` contains its answer text. The API's data format determines this access path. The hint `dict[str, Any]` states that the top level is a JSON object; `Any` admits the mixed value types inside it. A valid HTTP response can still contain an error, an incomplete job or a factually wrong answer. See [the walkthrough's response handling](nvidia_walkthrough.md#6-follow-the-python-execution) before extending the starter, and [its response inspection](nvidia_walkthrough.md#10-inspect-one-response) for the other body fields.
 
 ## 8. Explain the boundary before moving on
 

@@ -44,7 +44,7 @@ Keep `.env` in this project root. The code explicitly resolves that root from it
 
 ```text
 llm_inference/
-    pyproject.toml           project metadata and dependency requirements
+    pyproject.toml           project metadata, dependencies and Ruff settings
     uv.lock                  resolved package versions and distributions
     .python-version          preferred Python version: 3.13
     .gitignore               files excluded from ordinary Git tracking
@@ -123,15 +123,15 @@ If using **WSL**, open the folder in a VS Code WSL window and run uv inside that
 Opening from a terminal is an optional alternative: `code -n .` opens the current project in a new VS Code window when `code` is on PATH. On macOS, use **View > Command Palette**, run **Shell Command: Install 'code' command in PATH**, and restart the terminal if you want this shortcut. **File > Open Folder** works without configuring the shell command. [VS Code on macOS](https://code.visualstudio.com/docs/setup/mac).
 
 1. Open **View > Command Palette**, search for **Python: Select Interpreter**, and select this project's `.venv`. Use the platform's interpreter path from the table above if you need to browse for it; from the outer repository root it is under `llm_inference/`. The project-local `python.defaultInterpreterPath` setting helps a newly opened project workspace; explicitly select the interpreter if VS Code previously remembered a different one. The supplied named launch configurations also specify this interpreter directly.
-2. Open [inspect_http_request.py](src/eaas_llm_inference/inspect_http_request.py). Click the editor gutter beside `prepared = requests.Request(...)` to set a breakpoint. A red dot marks it.
+2. Open [inspect_http_request.py](src/eaas_llm_inference/inspect_http_request.py). Click the editor gutter beside the line `prepared: requests.PreparedRequest = requests.Request(` to set a breakpoint. A red dot marks it.
 3. Select the **Run and Debug** icon in the Activity Bar: the play triangle with a small bug. Choose **LLM: Inspect HTTP (offline)** in the configuration dropdown, then click the triangle beside it to start debugging. The **Run > Start Debugging** menu action starts the selected configuration too.
 4. The uv task prepares the environment (`uv: sync` in the project folder, or `uv: sync llm_inference` in the outer repository folder). The debugger then pauses at the module's entry because `stopOnEntry` is enabled. Click **Continue** in the debug toolbar to reach your breakpoint; hovering over a toolbar button shows its name.
 5. Click **Step Over** to execute the preparation statement. Inspect `prepared.method`, `prepared.url` and `prepared.body` in **Watch** or the **Debug Console**. This script only prepares a fake request; it sends nothing and reads no credential.
-6. Open [nvidia_inference.py](src/eaas_llm_inference/nvidia_inference.py). Set breakpoints on `response = requests.post(...)`, on the following HTTP-status print, and on the final `print(result[...])`. Select **LLM: NVIDIA inference (live)** and click **Start Debugging**.
+6. Open [nvidia_inference.py](src/eaas_llm_inference/nvidia_inference.py). Set breakpoints on the `response: requests.Response = requests.post(` line, on the following HTTP-status print, and on the final `print(result[...])`. Select **LLM: NVIDIA inference (live)** and click **Start Debugging**.
 
-A breakpoint pauses **before** its line executes. At the first request breakpoint, `response` does not exist yet. Choosing **Step Over** executes the HTTP call and waits for the complete response. At the following print, inspect `response.status_code`, `response.headers.get("Content-Type")` and `response.text`. At the final print, `result` has been assigned, so inspect `result["choices"][0]["message"]["content"]`.
+A breakpoint pauses **before** its line executes. At the first request breakpoint, `response` does not exist yet. Choosing **Step Over** executes the HTTP call and waits for the complete response. At the following print, inspect `response.status_code`, `response.headers.get("Content-Type")` and `response.text`. `response.content` holds the same body as raw bytes; expanding it shows methods of the `bytes` type, not JSON fields. At the final print, `result` has been assigned, so add `result` to **Watch** and expand it, or inspect `result["choices"][0]["message"]["content"]`. [What comes back?](http_and_requests.md#7-what-comes-back) maps every part of the response, and the [response inspection](nvidia_walkthrough.md#10-inspect-one-response) explains each body field.
 
-The live debugger can display secrets from memory: `api_key`, the `config` dictionary and `response.request.headers` can expose the credential. Use the offline configuration for screen-shared demonstrations and inspect live responses privately.
+The live debugger displays secrets from memory. At every pause after the key has been read, **Variables > Locals** shows `api_key` and the `config` dictionary in plain text without any expanding; hovering over `api_key` and expanding `response.request.headers` reveal the credential too. Collapse **Variables** and work with **Watch** and the **Debug Console** before sharing a screen or taking a screenshot. Use the offline configuration for screen-shared demonstrations and inspect live responses privately. If a key has been exposed, revoke it and generate a new one.
 
 Default shortcuts are optional conveniences:
 
@@ -169,7 +169,7 @@ The files under this project's [.vscode](.vscode/launch.json) describe the edito
 | `"envFile": ""` | Disables the extension's automatic `.env` loading. Our Python code still reads its private configuration explicitly with `dotenv_values`. |
 | `"stopOnEntry": true` | Pauses at module entry, even before you set a breakpoint. |
 | [settings.json](.vscode/settings.json) | Suggests the uv environment to the Python extension. |
-| [extensions.json](.vscode/extensions.json) | Recommends the two Microsoft extensions. |
+| [extensions.json](.vscode/extensions.json) | Recommends the two Microsoft extensions and the Ruff extension. |
 
 The launch route is `uv sync -> .venv -> VS Code/debugpy -> Python module -> main()`. It uses uv's environment, but does not literally run the `uv run nvidia-inference` shell command. The extension provides its debugger, so this route does not require adding `debugpy` to the project's dependencies. `envFile` behavior is implemented in the extension's [launch resolver](https://github.com/microsoft/vscode-python-debugger/blob/main/src/extension/debugger/configuration/resolvers/launch.ts) and [environment-file reader](https://github.com/microsoft/vscode-python-debugger/blob/main/src/extension/common/variables/environment.ts).
 
@@ -234,6 +234,27 @@ uv run python -m eaas_llm_inference.your_new_script
 When a new exercise needs another library, use `uv add <package-name>`. That command updates the dependency declaration, lockfile and environment. Use `uv remove <package-name>` when it is no longer needed. To deliberately refresh the dependency versions, use `uv lock --upgrade` followed by `uv sync`, and review the resulting changes. [Managing a uv project](https://docs.astral.sh/uv/guides/projects/).
 
 For a short terminal command, add a mapping under `[project.scripts]` and run `uv sync` to refresh the installed launchers. When experiments need shared implementation, add modules in the same package and import their functions. The initial examples remain small enough to teach directly.
+
+## Check code quality
+
+The project uses [Ruff](https://docs.astral.sh/ruff/) as linter and formatter. It is declared as a development dependency in `pyproject.toml`, so `uv sync` installs the locked version into `.venv` alongside the runtime libraries. Check every new or changed module from the project root:
+
+```console
+uv run ruff check
+uv run ruff format
+```
+
+`ruff check` reports problems such as unused imports, functions without type hints or docstrings, an HTTP request without a timeout, or an `assert` used as a runtime check. `uv run ruff check --fix` applies the fixes Ruff considers safe. `ruff format` rewrites layout such as line breaks and spacing consistently without changing behavior; `uv run ruff format --check` only reports files it would change. Neither command runs the examples or sends a request.
+
+The selected rule groups are listed under `[tool.ruff.lint]` in `pyproject.toml`, each with a short comment. Ruff checks only the Python files: code blocks in the Markdown guides are excerpts, some of them fragments of a call. [Ruff configuration](https://docs.astral.sh/ruff/configuration/), [rule reference](https://docs.astral.sh/ruff/rules/).
+
+The examples annotate every function and variable with type hints. Ruff requires hints on functions but does not check whether hints are correct; a type checker does. This command checks them with mypy without adding it to the project, similar to the `--with debugpy` attach workflow:
+
+```console
+uv run --with mypy mypy --strict src
+```
+
+In VS Code, the recommended **Ruff** extension (`charliermarsh.ruff`) shows the same findings in the editor.
 
 ## Troubleshooting
 
