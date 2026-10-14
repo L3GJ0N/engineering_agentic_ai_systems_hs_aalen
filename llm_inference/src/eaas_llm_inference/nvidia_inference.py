@@ -67,6 +67,10 @@ def main() -> None:
     print(f"Received HTTP {response.status_code} from NVIDIA.")
 
     # Back on the laptop: check, parse and display. These steps do no inference.
+    # On an error status, NVIDIA explains the reason in the body; the exception
+    # raised below would only name the status code.
+    if not response.ok:
+        print(response.text)
     response.raise_for_status()  # Raise for an HTTP error (4xx/5xx).
     # Parse the body bytes into Python dicts and lists. The body is already
     # stored locally, so this does not contact NVIDIA again.

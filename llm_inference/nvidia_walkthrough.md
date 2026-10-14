@@ -286,6 +286,7 @@ This is a conceptual service diagram, not a measured trace of NVIDIA's internal 
 | `json={...}` | Construct a dictionary containing messages and settings. | Laptop |
 | `requests.post(...)` | Encode and transmit the request, then wait for the response body. | Laptop communicating with NVIDIA |
 | Remote generation | The service runs the requested model if the request is accepted. | NVIDIA deployment |
+| `if not response.ok: print(response.text)` | On an error status, display the service's explanation from the response body. | Laptop |
 | `response.raise_for_status()` | Raise an exception for HTTP error status codes. | Laptop |
 | `response.json()` | Parse the received JSON into Python objects. | Laptop |
 | `choices[0]["message"]["content"]` | Extract the first returned assistant answer. | Laptop |
@@ -408,10 +409,38 @@ Exit ticket: explain the difference between a model, a model server, a client li
 | `NVIDIA_API_KEY is missing from the local configuration.` | Local configuration: the private `.env` must be available beside `pyproject.toml` and contain a nonblank entry under that name. The script has not sent a request. |
 | HTTP 401 / 403 | Authentication, expiry, permissions or endpoint access. |
 | HTTP 400 / 422 | Request fields, model identifier and accepted values. |
-| HTTP 429 | Applicable quota, rate or capacity limit; inspect the response. |
-| HTTP 5xx / timeout | Service/network conditions; a timeout alone does not locate the failure. |
+| HTTP 429 | Applicable quota, rate or capacity limit; inspect the response and wait before retrying. See [the free endpoint's limits](#13-understand-the-free-endpoints-limits). |
+| HTTP 5xx | Service-side error or capacity; try again later. A 504 means no worker picked up the request in time. |
+| `ReadTimeout` (`Read timed out`) | The connection worked and the request was sent, but no HTTP response arrived within the read timeout. Often service load; see [the free endpoint's limits](#13-understand-the-free-endpoints-limits). |
+| `ConnectTimeout` or `ConnectionError` | No connection to NVIDIA: check the network before suspecting the service. |
 | HTTP 202 | Pending work; this minimal script does not implement polling. |
 | `choices` missing | Inspect status and response body before assuming a completion schema. |
 | Empty/truncated answer | Inspect termination, output budget and any exposed reasoning. |
 
 HTTP status is evidence about request handling, not a model-quality score. The account instructions include the instructor's reported registration experience; Python examples were checked offline during artifact preparation. Rehearse one real completed inference response before the class.
+
+A traceback shows the failing layer. Read it from the bottom: in a `ReadTimeout`, the deepest frames are in `ssl` and `socket`, waiting for bytes, and above them `http.client` waits for the response's status line. The request had left the laptop, but no status line arrived.
+
+## 13. Understand the free endpoint's limits
+
+Free hosted access is meant for evaluation and prototyping. NVIDIA describes its limits only in general terms, so measure what your own account experiences. The sources in this section were checked on **14 October 2026**; limits and free access can change.
+
+**What NVIDIA documents.** NVIDIA's [NIM FAQ](https://forums.developer.nvidia.com/t/nvidia-nim-faq/300317) says the number of calls allowed in a period is "designed to serve evaluation and prototyping needs only", that the rate "will vary per model queried and may vary based on the number of concurrent users", and that "you may experience extended wait times during periods of high load". Your account menu at the top right of build.nvidia.com shows the rate limits that apply to you. The [endpoint reference](https://docs.api.nvidia.com/nim/reference/nvidia-nemotron-3-5-lightning-30b-a3b-infer) documents status 202 as "Result is pending. Client should poll using the requestId", with the request ID in the `NVCF-REQID` header. NVIDIA's [Cloud Functions troubleshooting](https://docs.nvidia.com/nvcf/generic-http-function-invocation.md) explains status 504 as "No worker picked up the request within the polling timeout window."
+
+**What is reported, but not official.** Developer reports and third-party guides commonly mention a default of about 40 requests per minute per model, and HTTP 429 when it is exceeded. A moderator reply quoted in the [NVIDIA developer forum](https://forums.developer.nvidia.com/t/request-for-nvidia-build-api-rate-limit-increase-to-300-rpm-business-use/383589) describes the limit as "dependent on model, use-case and the amount of current overall traffic" and says there is "no official way" to raise it on the free tier. Treat any number as an observation, not a promise, and check your account page.
+
+**What we observed.** Two identical requests from the same account: one completed in about 0.7 seconds on 13 October 2026; a later one received no response within the starter's 60-second read timeout and ended with `requests.exceptions.ReadTimeout` on 14 October 2026. The same code and key can succeed quickly or wait in vain, depending on the service's load.
+
+| Symptom | Layer | Meaning |
+|---|---|---|
+| `ConnectTimeout` or `ConnectionError` | Network, before HTTP | No connection; the request was not processed. Check the network. |
+| `ReadTimeout` | After sending, before any HTTP response | No status line arrived within the read timeout. A busy free endpoint can keep requests waiting. Our client gave up, so we do not know what the service would eventually have answered. |
+| HTTP 202 | HTTP response | Accepted but still pending; the result must be polled using `NVCF-REQID`. The course scripts do not poll. |
+| HTTP 429 | HTTP response | Too many requests: a rate or capacity limit applied. Wait, at least as long as a `Retry-After` header says, if present. |
+| HTTP 504 | HTTP response | No worker picked up the request in time. Try again later. |
+
+**Where the explanation of a failure comes from.** The service checks the key, the request fields and the limits before the model runs. A rejected request therefore returns quickly, and the model never runs: the status names the category, and the body usually explains the reason. The starter prints that body before raising its exception. A timeout carries no explanation at all, because no response arrived.
+
+**Can you see how close you are to the limit?** Some providers send rate-limit headers, such as `x-ratelimit-remaining-requests`, with every response. NVIDIA documents no such header and no endpoint that reports the remaining quota, so on the free tier you typically learn about a limit only when a request is rejected, or from the account page. Whether NVIDIA's responses contain such headers anyway can be checked: `uv run capture-nvidia-response` prints every response header and ends with one line naming any `Retry-After`, rate-limit or `NVCF-` headers. It also saves runs that ended without any response, together with the time waited. Every run is a real request that counts against your limits: space runs out and never retry in a loop.
+
+The starter has no retry logic. Polling pending results, honoring rate limits and retrying belong in later, more robust clients.

@@ -369,7 +369,7 @@ response                          requests.Response, built on the laptop
 
 **`response` keeps a copy of your credential.** `response.request.headers` contains the `Authorization` header with the bearer key. Do not print or share `response.request`; the [walkthrough](nvidia_walkthrough.md#10-inspect-one-response) shows how to inspect a live response without exposing the key. To keep a record of one real exchange, run `uv run capture-nvidia-response`: it prints and saves the request and the complete response with credential headers replaced by `<removed>` ([project README](README.md#run-the-project)).
 
-`response.raise_for_status()` raises an exception for 4xx/5xx responses. It does not validate the answer or check the JSON schema. [Requests response interface](https://requests.readthedocs.io/en/latest/api/#requests.Response).
+`response.raise_for_status()` raises an exception for 4xx/5xx responses. It does not validate the answer or check the JSON schema. Its message names only the status, for example `429 Client Error: Too Many Requests`; the service's explanation is in the body. The starter therefore prints `response.text` first when `response.ok` is false. [Requests response interface](https://requests.readthedocs.io/en/latest/api/#requests.Response).
 
 A **200** response indicates successful HTTP handling; **401** indicates an authentication problem; **500** indicates a server error. A **202** can mean the request was accepted but work is not yet complete. Network failures can occur before any HTTP response is received. [HTTP status semantics](https://www.rfc-editor.org/rfc/rfc9110.html#name-status-codes).
 

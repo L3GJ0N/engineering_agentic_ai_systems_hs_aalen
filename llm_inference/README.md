@@ -44,7 +44,7 @@ To see everything that came back, not only the answer, run:
 uv run capture-nvidia-response
 ```
 
-It sends the same single request, then prints the request as it was sent and the complete response: status, headers, timing and the full JSON body. It also saves this capture under a timestamped name in `outputs/`, which Git ignores. Header values that can carry credentials, such as `Authorization`, are replaced by `<removed>`, and the script refuses to print or save anything that still contains your key, so a capture can be shown in class. Each run is one more live request. [What comes back?](http_and_requests.md#7-what-comes-back) explains every part.
+It sends the same single request, then prints the request as it was sent and the complete response: status, headers, timing and the full JSON body. A final line names any rate-limit headers in the response. It also saves this capture under a timestamped name in `outputs/`, which Git ignores; a run that ends without any response, such as a timeout, is saved too. Header values that can carry credentials, such as `Authorization`, are replaced by `<removed>`, and the script refuses to print or save anything that still contains your key, so a capture can be shown in class. Each run is one more live request. [What comes back?](http_and_requests.md#7-what-comes-back) explains every part of the response, and [the free endpoint's limits](nvidia_walkthrough.md#13-understand-the-free-endpoints-limits) explains what a failure tells you.
 
 Keep `.env` in this project root. The code explicitly resolves that root from its location in `src/eaas_llm_inference/`; see [the configuration explanation](http_and_requests.md#52-read-our-local-configuration-one-line-at-a-time). Neither command needs a key in a command-line argument, and the live starter does not use uv's `--env-file` option: its Python code explicitly reads `.env` with `dotenv_values`.
 
@@ -168,7 +168,8 @@ In VS Code, the recommended **Ruff** extension (`charliermarsh.ruff`) shows the 
 | A library is missing when using plain `python` | Use `uv run ...` to select the project's environment. |
 | The lockfile is out of date | After an intentional dependency edit, run `uv lock`, review the update, then sync. |
 | `NVIDIA_API_KEY is missing from the local configuration.` | Check the private `.env` in the project root; the script stopped before HTTP. |
-| NVIDIA returns an error | Use the [HTTP/API troubleshooting guide](nvidia_walkthrough.md#12-diagnose-the-layer-before-changing-the-prompt). |
+| NVIDIA returns an error | The starter prints NVIDIA's explanation from the response body above the traceback. Then use the [HTTP/API troubleshooting guide](nvidia_walkthrough.md#12-diagnose-the-layer-before-changing-the-prompt). |
+| `ReadTimeout` or `Read timed out` after about 60 seconds | The request was sent, but NVIDIA's free endpoint did not answer in time. Wait a few minutes before one more try; see [the free endpoint's limits](nvidia_walkthrough.md#13-understand-the-free-endpoints-limits). |
 | `Refusing to print or save: the capture contains the key.` | The response unexpectedly contained your key, so nothing was printed or saved. Inspect it privately in the [debugger](debugging.md#7-debug-the-live-request-safely). |
 
 The offline preview uses a literal fake credential and does not read `.env`, so it can be projected in class. Keep the actual key and any live authorization headers off the shared screen.
