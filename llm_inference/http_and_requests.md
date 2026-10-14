@@ -367,7 +367,7 @@ response                          requests.Response, built on the laptop
 
 **Transport details are not tokens.** A server can announce the body size with `Content-Length`, or send the body in pieces marked by `Transfer-Encoding: chunked`, possibly compressed (`Content-Encoding: gzip`). Requests reassembles and decompresses; `response.content` is the result. In a test run in October 2026, NVIDIA's service answered with `Transfer-Encoding: chunked`. These HTTP chunks are network framing; they are neither tokenizer tokens nor streamed model output.
 
-**`response` keeps a copy of your credential.** `response.request.headers` contains the `Authorization` header with the bearer key. Do not print or share `response.request`; the [walkthrough](nvidia_walkthrough.md#10-inspect-one-response) shows how to inspect a live response without exposing the key.
+**`response` keeps a copy of your credential.** `response.request.headers` contains the `Authorization` header with the bearer key. Do not print or share `response.request`; the [walkthrough](nvidia_walkthrough.md#10-inspect-one-response) shows how to inspect a live response without exposing the key. To keep a record of one real exchange, run `uv run capture-nvidia-response`: it prints and saves the request and the complete response with credential headers replaced by `<removed>` ([project README](README.md#run-the-project)).
 
 `response.raise_for_status()` raises an exception for 4xx/5xx responses. It does not validate the answer or check the JSON schema. [Requests response interface](https://requests.readthedocs.io/en/latest/api/#requests.Response).
 

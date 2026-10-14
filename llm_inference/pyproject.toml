@@ -12,6 +12,7 @@ dependencies = [
 [project.scripts]
 nvidia-inference = "eaas_llm_inference.nvidia_inference:main"
 inspect-http-request = "eaas_llm_inference.inspect_http_request:main"
+capture-nvidia-response = "eaas_llm_inference.capture_nvidia_response:main"
 
 [build-system]
 requires = ["uv_build>=0.8.19,<0.9.0"]

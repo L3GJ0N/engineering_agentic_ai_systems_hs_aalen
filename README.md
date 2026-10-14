@@ -8,8 +8,9 @@ Python teaching examples for the master's course **Engineering Agentic AI System
 
 - One direct NVIDIA Build inference request using Requests.
 - An offline HTTP request inspection that needs no account or key.
+- A capture of one complete live exchange, printed and saved without credentials.
 - Detailed HTTP, JSON, credential configuration and NVIDIA account walkthroughs.
-- VS Code launch and attach configurations for Windows, Linux and macOS.
+- VS Code launch and attach configurations for Windows, Linux and macOS, with a debugging guide.
 
 ## Start here
 
@@ -33,7 +34,7 @@ No local GPU is required for these hosted inference examples. Provider access an
 
 Open this repository folder or `llm_inference` itself in VS Code. Both have configurations for **LLM: Inspect HTTP (offline)**, **LLM: NVIDIA inference (live)** and **LLM: Attach to uv/debugpy (5678)**.
 
-Select the **Run and Debug** view, choose a configuration and use **Start Debugging**. The launch configurations run `uv sync` in the example project before starting its Python interpreter. See the [debugging walkthrough](llm_inference/README.md#debug-in-vs-code) for the full procedure, platform differences and breakpoint exercises.
+Select the **Run and Debug** view, choose a configuration and use **Start Debugging**. The launch configurations run `uv sync` in the example project before starting its Python interpreter. See the [debugging guide](llm_inference/debugging.md) for the full procedure, platform differences and breakpoint exercises.
 
 ## Repository structure
 
@@ -54,6 +55,7 @@ engineering_agentic_ai_systems_hs_aalen/
         README.md
         http_and_requests.md
         nvidia_walkthrough.md
+        debugging.md
 ```
 
 Each example owns its Python environment and dependencies. There is no root Python project; run uv commands from `llm_inference` for the current example. Additional examples can be added as the course develops.

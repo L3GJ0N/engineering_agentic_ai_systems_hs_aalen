@@ -374,10 +374,11 @@ After a successful call, find these fields in the parsed `result` rather than me
 
 These fields are typical of this chat-completion format; the service decides which ones it returns. The HTTP status line, headers and the local Response object around the body are explained in [What comes back?](http_and_requests.md#7-what-comes-back).
 
-There are two ways to look at the complete result:
+There are three ways to look at the complete result:
 
+- **Capture it.** `uv run capture-nvidia-response` sends the same request, prints the request as sent and the complete response, and saves both to `outputs/` with credential headers replaced by `<removed>`. The saved file can be opened later or shown in class.
 - **Print it.** Temporarily add `print(result)` before the final print, run once and remove the line afterward. The parsed body contains no key.
-- **Pause in the debugger.** Set a breakpoint on the final `print(...)` line and start **LLM: NVIDIA inference (live)**, as described in the [debugging instructions](README.md#debug-in-vs-code). Click **Continue** past the pause on the module's first line. At the breakpoint, add `result` to **Watch** and expand `choices`, `0` and `message`, then `usage`. For readable JSON, enter `import json` and then `print(json.dumps(result, indent=2, ensure_ascii=False))` in the **Debug Console**; the output appears there. Expanding `response.content` instead shows only one long bytes value, because the body is structured only after `response.json()`. If NVIDIA returned an error status, the debugger normally stops at `raise_for_status()`; inspect `response.status_code` and `response.text` there.
+- **Pause in the debugger.** Set a breakpoint on the final `print(...)` line and start **LLM: NVIDIA inference (live)**, as described in the [debugging guide](debugging.md#7-debug-the-live-request-safely). Click **Continue** past the pause on the module's first line. At the breakpoint, add `result` to **Watch** and expand `choices`, `0` and `message`, then `usage`. For readable JSON, enter `import json` and then `print(json.dumps(result, indent=2, ensure_ascii=False))` in the **Debug Console**; the output appears there. Expanding `response.content` instead shows only one long bytes value, because the body is structured only after `response.json()`. If NVIDIA returned an error status, the debugger normally stops at `raise_for_status()`; inspect `response.status_code` and `response.text` there.
 
 **Keep the key out of view while debugging.** As soon as the debugger pauses after the key has been read, **Variables > Locals** displays `api_key` and the `config` dictionary in plain text, without expanding anything. Hovering over `api_key` in the editor and expanding `response.request.headers` reveal it as well. Collapse **Variables** before sharing your screen or taking a screenshot, and work with **Watch** and the **Debug Console**. If a key has been exposed, revoke it in NVIDIA Build and generate a new one.
 
@@ -390,7 +391,7 @@ The prompt visualization comes later: load a public tokenizer locally to reconst
 1. **Locate execution.** Before running, label each statement laptop, network boundary, or remote work. Explain why the remote forward pass has no Python implementation in this file.
 2. **Trace a datum.** Follow the prompt from the Python string into `messages`, the request body, the remote input and the printed reply. Locate the API key separately.
 3. **Observe waiting.** Run once and watch the two status messages. State which parts of the elapsed time you cannot separate.
-4. **Inspect a response.** Print the complete result; locate answer, termination and any usage. Remove the extra print afterward.
+4. **Inspect a response.** Print the complete result, or run `uv run capture-nvidia-response`; locate answer, termination and any usage. Remove any extra print afterward.
 5. **Change one variable.** Change the public prompt, or lower `max_tokens` once. Record the outcome and explain whether the response was complete. Avoid repeatedly retrying a limited endpoint.
 6. **Explain deployment.** Describe what must change if the URL points to a university server instead. Does merely changing the URL deploy a model? No: that server must already exist.
 
