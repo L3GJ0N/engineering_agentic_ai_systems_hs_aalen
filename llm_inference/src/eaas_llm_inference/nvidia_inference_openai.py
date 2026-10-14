@@ -31,8 +31,8 @@ def main() -> None:
         # Passed explicitly; otherwise the SDK would read OPENAI_API_KEY.
         api_key=api_key,
         # The SDK defaults are a 600 s read timeout and 2 automatic retries on
-        # 408, 409, 429 and 5xx. Match the Requests starter instead: on the
-        # free tier, every retry would count against the limit.
+        # timeouts, connection errors, 408, 409, 429 and 5xx. Match the Requests
+        # starter instead: on the free tier, every retry counts against the limit.
         timeout=60,
         max_retries=0,
     )

@@ -467,15 +467,16 @@ Read it side by side with [nvidia_inference.py](src/eaas_llm_inference/nvidia_in
 | Error explanation | The starter prints `response.text` | Included in the exception message |
 | Answer | `result["choices"][0]["message"]["content"]` on dictionaries | `completion.choices[0].message.content` on typed objects |
 | Timeout | `timeout=60` | Default read timeout 600 s; our script sets 60 |
-| Retries | None | Default: 2 automatic retries on 408, 409, 429 and 5xx; our script sets `max_retries=0` |
-| Implicit configuration | None | Reads environment variables such as `OPENAI_API_KEY` and `OPENAI_BASE_URL` when values are not passed |
+| Retries | None | Default: 2 automatic retries on timeouts, connection errors, 408, 409, 429 and 5xx; our script sets `max_retries=0` |
+| Redirects | `allow_redirects=False`: not followed | Followed by the SDK's default HTTP client; NVIDIA's endpoint does not normally redirect |
+| Implicit configuration | None | Reads `OPENAI_API_KEY` and `OPENAI_BASE_URL` when values are not passed. Even with both passed, `OPENAI_ORG_ID` and `OPENAI_PROJECT_ID` are read and, if set, sent as `OpenAI-Organization` and `OpenAI-Project` headers |
 | Dependencies | `requests` | `openai`, plus `httpx2`, `pydantic`, `anyio`, `jiter` and others |
 
 The defaults were read from `openai` 3.29.0 on 14 October 2026; check them again after an upgrade.
 
 **"OpenAI" names the API format, not the destination.** NVIDIA's service accepts the OpenAI-compatible chat-completions format, so this client library can talk to it. `base_url` decides where the request goes: nothing is sent to OpenAI, and no OpenAI account is involved. Compatible does not mean identical: NVIDIA-specific fields need `extra_body`, and accepted values follow NVIDIA's [endpoint reference](https://docs.api.nvidia.com/nim/reference/nvidia-nemotron-3-5-lightning-30b-a3b-infer).
 
-**Automatic retries matter on the free tier.** With its defaults, the SDK silently repeats a request when NVIDIA answers 429 or a 5xx. In an offline test with a mocked 429 response, one call produced three requests within about a second, and the program reported only the final failure. Each request counts against your limit. Our script therefore sets `max_retries=0`, so both examples send exactly one request.
+**Automatic retries matter on the free tier.** With its defaults, the SDK silently repeats a request when NVIDIA answers 429 or a 5xx, and also after a timeout or a connection error. In an offline test with a mocked 429 response, one call produced three requests within about a second, and the program reported only the final failure. Each request counts against your limit, and a silent endpoint could keep a default call waiting for three attempts of 600 seconds each. Our script therefore sets `max_retries=0`, so both examples send one request per call.
 
 **What stays the same.** Both programs run locally, send one HTTPS request with a JSON body to the same endpoint and wait while NVIDIA's model runs. The SDK saves code; it changes neither the essential message nor where the model runs. Use the Requests starter to see the HTTP mechanics, and an SDK when an application benefits from typed responses, built-in retries and streaming helpers.
 
