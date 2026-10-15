@@ -14,7 +14,7 @@ uv --version
 
 If it is missing, use [Astral's installation instructions](https://docs.astral.sh/uv/getting-started/installation/). On Windows, their documented WinGet option is `winget install --id=astral-sh.uv -e`. Open a new terminal afterward if the command is not yet found.
 
-From the `engineering_agentic_ai_systems_hs_aalen` repository root:
+From the repository root, the folder that contains `README.md` and `llm_inference` (`engineering_agentic_ai_systems_hs_aalen`, or `engineering_agentic_ai_systems_hs_aalen-main` from a ZIP download):
 
 ```console
 cd llm_inference

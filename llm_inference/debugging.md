@@ -41,7 +41,7 @@ When the program has finished, pdb restarts it and pauses on line 1 again; type 
 
 Install Microsoft's **Python** (`ms-python.python`) and **Python Debugger** (`ms-python.debugpy`) extensions; the workspace recommends them together with the Ruff extension. No Copilot subscription is required.
 
-Use **File > Open Folder** and select either the outer **`engineering_agentic_ai_systems_hs_aalen` repository folder** or **`llm_inference` itself**. Both folders contain launch configurations with the same **LLM:** names: the repository-root [launch.json](../.vscode/launch.json) points into this project, while the project-local [launch.json](.vscode/launch.json) uses local paths. VS Code reads the opened folder's configuration; it does not discover every nested `.vscode` folder.
+Use **File > Open Folder** and select either the outer **repository folder** (`engineering_agentic_ai_systems_hs_aalen`, or `engineering_agentic_ai_systems_hs_aalen-main` from a ZIP download) or **`llm_inference` itself**. Both folders contain launch configurations with the same **LLM:** names: the repository-root [launch.json](../.vscode/launch.json) points into this project, while the project-local [launch.json](.vscode/launch.json) uses local paths. VS Code reads the opened folder's configuration; it does not discover every nested `.vscode` folder.
 
 Open **Terminal > New Terminal**. The commands in this guide run in `llm_inference`; if the terminal starts at the repository root, first run `cd llm_inference`. Then prepare the environment:
 
@@ -147,7 +147,7 @@ The supplied configurations set `"justMyCode": true`. Your program runs the same
 
 To try it, change `"justMyCode"` to `false` in **LLM: Inspect HTTP (offline)** in the `launch.json` of the folder you opened: `.vscode/launch.json` at the repository root, or `llm_inference/.vscode/launch.json`. Save and start a new session; the file is read when a session starts. **Step Into** on the preparation line now opens `models.py` in `.venv`'s `site-packages` folder: first the `Request` constructor, and after **Step Out** and another **Step Into**, the `prepare()` method that builds the headers and body. Everything you step through still runs locally.
 
-Revert the change afterwards: in the **Source Control** view, right-click `launch.json` and choose **Discard Changes**. [Python debugging in VS Code](https://code.visualstudio.com/docs/python/debugging).
+Revert the change afterwards: set `"justMyCode"` back to `true` and save. In a Git clone, the **Source Control** view does the same: right-click `launch.json` and choose **Discard Changes**. [Python debugging in VS Code](https://code.visualstudio.com/docs/python/debugging).
 
 ## 7. Debug the live request safely
 
@@ -219,7 +219,7 @@ The launch route is `uv sync -> .venv -> VS Code/debugpy -> Python module -> mai
 
 | Observation | Check |
 |---|---|
-| The supplied configurations are missing, or VS Code asks to create `launch.json` | Open either `llm_inference` or the outer `engineering_agentic_ai_systems_hs_aalen` folder, where configurations are supplied. Close the debugger-selection popup and try **View > Command Palette > Developer: Reload Window** if these files have just been added. An unrelated parent folder needs its own configuration. |
+| The supplied configurations are missing, or VS Code asks to create `launch.json` | Open either `llm_inference` or the outer repository folder, the one that contains `README.md` and `llm_inference`; configurations are supplied there. Close the debugger-selection popup and try **View > Command Palette > Developer: Reload Window** if these files have just been added. An unrelated parent folder needs its own configuration. |
 | Every session pauses on line 1 | That is `stopOnEntry`; click **Continue**. |
 | VS Code reports that the pre-launch task terminated with an exit code | `uv sync` failed. Choose **Abort**, read the task's terminal output and run `uv sync` in the project folder. |
 | The `uv: sync` task cannot find uv | Run `uv --version` in VS Code's terminal; restart VS Code after installing uv so it gets the updated PATH. |

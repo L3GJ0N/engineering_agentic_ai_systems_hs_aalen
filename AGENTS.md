@@ -32,4 +32,4 @@ This repository contains the shareable Python examples for **Engineering Agentic
 - Verify changes with checks appropriate to their impact; avoid tests that merely restate trivial implementation.
 - Distinguish a successful HTTP response from a correct model answer, and local Python debugging from remote model execution.
 - Future topics include Hugging Face, OpenRouter, token inspection, reasoning output, systematic evaluation and agent loops. These are directions, not a request to implement them all at once.
-- This repository starts locally. Do not create a GitHub repository, configure a remote or push unless the user requests publication.
+- This repository is public on GitHub as [L3GJ0N/engineering_agentic_ai_systems_hs_aalen](https://github.com/L3GJ0N/engineering_agentic_ai_systems_hs_aalen), with `origin` pointing there. Anything committed becomes public once pushed: push only when the user asks, and never commit credentials, `.env` files, captured responses or personal e-mail addresses. Commit with a GitHub noreply address.

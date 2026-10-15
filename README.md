@@ -15,7 +15,16 @@ Python teaching examples for the master's course **Engineering Agentic AI System
 
 ## Start here
 
-Install [uv](https://docs.astral.sh/uv/getting-started/installation/), open a terminal in this repository, then run:
+Get the repository: on its [GitHub page](https://github.com/L3GJ0N/engineering_agentic_ai_systems_hs_aalen), select **Code → Download ZIP** and extract the archive, or clone it with Git:
+
+```console
+git clone https://github.com/L3GJ0N/engineering_agentic_ai_systems_hs_aalen.git
+cd engineering_agentic_ai_systems_hs_aalen
+```
+
+The repository folder is the one that directly contains `README.md` and `llm_inference`. A downloaded archive extracts to `engineering_agentic_ai_systems_hs_aalen-main`; on Windows, **Extract All** can place it inside a second folder of the same name.
+
+Install [uv](https://docs.astral.sh/uv/getting-started/installation/), open a terminal in the repository folder, then run:
 
 ```console
 cd llm_inference
