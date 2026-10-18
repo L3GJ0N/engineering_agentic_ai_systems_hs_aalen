@@ -10,7 +10,8 @@ Python teaching examples for the master's course **Engineering Agentic AI System
 - An offline HTTP request inspection that needs no account or key.
 - A capture of one complete live exchange, printed and saved without credentials.
 - The same request sent through the OpenAI SDK, to compare with the direct Requests call.
-- Detailed HTTP, JSON, credential configuration and NVIDIA account walkthroughs.
+- The same model through OpenRouter, a service that forwards requests to model providers, again as a direct Requests call and through the OpenAI SDK.
+- Detailed HTTP, JSON, credential configuration, NVIDIA account and OpenRouter account walkthroughs.
 - VS Code launch and attach configurations for Windows, Linux and macOS, with a debugging guide.
 
 ## Start here
@@ -32,17 +33,19 @@ uv sync
 uv run inspect-http-request
 ```
 
-The offline example prepares and displays a fake request without sending it. For hosted inference, follow the [NVIDIA walkthrough](llm_inference/nvidia_walkthrough.md) and configure the credential in your private `llm_inference/.env`. The tracked `.env.example` declares an empty field only. Then run from `llm_inference`:
+The offline example prepares and displays a fake request without sending it. For hosted inference, follow the [NVIDIA walkthrough](llm_inference/nvidia_walkthrough.md) and configure the credential in your private `llm_inference/.env`. The tracked `.env.example` declares empty fields only. Then run from `llm_inference`:
 
 ```console
 uv run nvidia-inference
 ```
 
+To send the same prompt to the same model through OpenRouter, follow the [OpenRouter walkthrough](llm_inference/openrouter_walkthrough.md), add that key to the same `.env` and run `uv run openrouter-inference`.
+
 No local GPU is required for these hosted inference examples. Provider access and availability depend on the student's account; the offline example works independently of that access.
 
 ## Debug in VS Code
 
-Open this repository folder or `llm_inference` itself in VS Code. Both have configurations for **LLM: Inspect HTTP (offline)**, **LLM: NVIDIA inference (live)**, **LLM: NVIDIA inference via OpenAI SDK (live)** and **LLM: Attach to uv/debugpy (5678)**.
+Open this repository folder or `llm_inference` itself in VS Code. Both have configurations for **LLM: Inspect HTTP (offline)**, **LLM: NVIDIA inference (live)**, **LLM: NVIDIA inference via OpenAI SDK (live)**, **LLM: OpenRouter inference (live)**, **LLM: OpenRouter inference via OpenAI SDK (live)** and **LLM: Attach to uv/debugpy (5678)**.
 
 Select the **Run and Debug** view, choose a configuration and use **Start Debugging**. The launch configurations run `uv sync` in the example project before starting its Python interpreter. See the [debugging guide](llm_inference/debugging.md) for the full procedure, platform differences and breakpoint exercises.
 
@@ -59,12 +62,13 @@ engineering_agentic_ai_systems_hs_aalen/
         pyproject.toml
         uv.lock
         .python-version
-        .env.example             empty configuration field; no credential
+        .env.example             empty configuration fields; no credential
         .vscode/                 launch configurations for this project alone
         src/eaas_llm_inference/
         README.md
         http_and_requests.md
         nvidia_walkthrough.md
+        openrouter_walkthrough.md
         debugging.md
 ```
 

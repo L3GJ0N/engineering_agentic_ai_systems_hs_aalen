@@ -50,6 +50,38 @@
             "justMyCode": true
         },
         {
+            "name": "LLM: OpenRouter inference (live)",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "eaas_llm_inference.openrouter_inference",
+            "python": "${workspaceFolder}/llm_inference/.venv/bin/python",
+            "windows": {
+                "python": "${workspaceFolder}/llm_inference/.venv/Scripts/python.exe"
+            },
+            "cwd": "${workspaceFolder}/llm_inference",
+            "console": "integratedTerminal",
+            "envFile": "",
+            "preLaunchTask": "uv: sync llm_inference",
+            "stopOnEntry": true,
+            "justMyCode": true
+        },
+        {
+            "name": "LLM: OpenRouter inference via OpenAI SDK (live)",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "eaas_llm_inference.openrouter_inference_openai",
+            "python": "${workspaceFolder}/llm_inference/.venv/bin/python",
+            "windows": {
+                "python": "${workspaceFolder}/llm_inference/.venv/Scripts/python.exe"
+            },
+            "cwd": "${workspaceFolder}/llm_inference",
+            "console": "integratedTerminal",
+            "envFile": "",
+            "preLaunchTask": "uv: sync llm_inference",
+            "stopOnEntry": true,
+            "justMyCode": true
+        },
+        {
             "name": "LLM: Attach to uv/debugpy (5678)",
             "type": "debugpy",
             "request": "attach",

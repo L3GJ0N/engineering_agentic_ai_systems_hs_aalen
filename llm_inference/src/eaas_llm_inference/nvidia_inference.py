@@ -32,8 +32,8 @@ def main() -> None:
     if api_key is None or not api_key.strip():
         raise SystemExit("NVIDIA_API_KEY is missing from the local configuration.")
     # The key is now plain text in memory. A paused debugger shows api_key and
-    # config under Variables > Locals without any expanding: keep that panel
-    # off shared screens and screenshots.
+    # config, which holds every key in .env, under Variables > Locals without
+    # any expanding: keep that panel off shared screens and screenshots.
 
     prompt: str = "Explain tokenization in one sentence."
 
