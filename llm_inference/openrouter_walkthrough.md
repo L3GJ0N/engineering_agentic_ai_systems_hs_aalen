@@ -187,8 +187,8 @@ OPENROUTER_API_KEY=
 
 Store the real key only in your private `.env` in `llm_inference`, beside `pyproject.toml`. If `.env` already holds your NVIDIA key, add the OpenRouter line to it; do not create a second file.
 
-1. In VS Code, use **File > Open Folder** and open the repository folder or `llm_inference`.
-2. In the **Explorer**, open `.env` in `llm_inference`; if you opened `llm_inference` itself, it is the first file below the folders, such as `.venv`, `.vscode` and `src`. If it does not exist, right-click `.env.example` and choose **Copy**, then right-click `.env.example` again and choose **Paste**: the copy appears in the same folder. Right-click the copy, choose **Rename** and name it `.env`.
+1. In VS Code, open the course workspace with **File > Open Workspace from File** (`engineering_agentic_ai_systems.code-workspace` in the repository folder), or open `llm_inference` with **File > Open Folder**.
+2. In the **Explorer**, open `.env` in the **llm_inference** folder; it is the first file below the folders, such as `.venv`, `.vscode` and `src`. If it does not exist, right-click `.env.example` and choose **Copy**, then right-click `.env.example` again and choose **Paste**: the copy appears in the same folder. Right-click the copy, choose **Rename** and name it `.env`.
 3. Paste the key directly after `OPENROUTER_API_KEY=`: no quotes, no spaces and no `Bearer`. If your `.env` has no such line, because you created it from the earlier one-line template, type `OPENROUTER_API_KEY=` on a new line first. Keep the `NVIDIA_API_KEY` line as it is.
 4. Save with **File > Save**.
 
