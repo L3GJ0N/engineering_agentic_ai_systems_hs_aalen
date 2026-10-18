@@ -1,8 +1,8 @@
 # LLM inference examples
 
-This standalone **packaged uv project** starts with one NVIDIA inference request and an offline HTTP inspection. It follows a `uv init --package` scaffold, with Python code in `src/eaas_llm_inference/`. We will add modules for other providers, tokenization, reasoning and evaluation here as the course develops. All examples share one declared set of dependencies and one local Python environment.
+This standalone **packaged uv project** starts with one NVIDIA inference request, its OpenRouter counterpart and an offline HTTP inspection. It follows a `uv init --package` scaffold, with Python code in `src/eaas_llm_inference/`. We will add modules for other providers, tokenization, reasoning and evaluation here as the course develops. All examples share one declared set of dependencies and one local Python environment.
 
-Start with [HTTP, configuration and Requests](http_and_requests.md), then follow [NVIDIA account setup and inference](nvidia_walkthrough.md). [Debugging in VS Code](debugging.md) shows how to pause the examples and inspect them line by line. These guides and the scripts are self-contained; provider comparisons and tokenizer viewers will be added as later examples.
+Start with [HTTP, configuration and Requests](http_and_requests.md), then follow [NVIDIA account setup and inference](nvidia_walkthrough.md). [OpenRouter account setup and inference](openrouter_walkthrough.md) sends the same prompt and settings to the same model through OpenRouter, shows which request fields change and compares both services. [Debugging in VS Code](debugging.md) shows how to pause the examples and inspect them line by line. These guides and the scripts are self-contained; tokenizer viewers will be added as later examples.
 
 ## Run the project
 
@@ -22,15 +22,16 @@ uv sync
 uv run inspect-http-request
 ```
 
-`uv sync` prepares the local `.venv` with the resolved dependencies and installs this project in **editable mode**: imports use the Python files in `src/`, so edits to their code take effect on the next run. It also installs the four command entry points declared in `pyproject.toml`. `uv run` prepares the environment as needed and runs a command using it. No manual environment activation is needed. These commands update `uv.lock` when project requirements require it; a new package release alone does not cause an upgrade. Add `--locked` when an outdated or missing lockfile should be an error, for example in CI. Initial setup needs network access when Python or packages are not already available. The inspection script itself sends no network request and needs no key. [uv environment and lock behavior](https://docs.astral.sh/uv/concepts/projects/sync/).
+`uv sync` prepares the local `.venv` with the resolved dependencies and installs this project in **editable mode**: imports use the Python files in `src/`, so edits to their code take effect on the next run. It also installs the six command entry points declared in `pyproject.toml`. `uv run` prepares the environment as needed and runs a command using it. No manual environment activation is needed. These commands update `uv.lock` when project requirements require it; a new package release alone does not cause an upgrade. Add `--locked` when an outdated or missing lockfile should be an error, for example in CI. Initial setup needs network access when Python or packages are not already available. The inspection script itself sends no network request and needs no key. [uv environment and lock behavior](https://docs.astral.sh/uv/concepts/projects/sync/).
 
-The Python code retrieves the credential from your private **`.env`** in the project root, beside `pyproject.toml`. The tracked [.env.example](.env.example) declares only the configuration field, with an empty value:
+The Python code retrieves the credentials from your private **`.env`** in the project root, beside `pyproject.toml`. The tracked [.env.example](.env.example) declares only the configuration fields, with empty values:
 
 ```dotenv
 NVIDIA_API_KEY=
+OPENROUTER_API_KEY=
 ```
 
-Configure the value only in your private, untracked `.env`. Python source uses the configuration field's name and the value read at runtime; it contains no key literal or paste-here placeholder. If you already configured `.env`, keep using it. In Windows, check that the filename is `.env`, not `.env.txt`. Then run:
+Configure the values only in your private, untracked `.env`; each example selects only its own field, although `dotenv_values` parses the whole file into `config`. Python source uses the configuration field's name and the value read at runtime; it contains no key literal or paste-here placeholder. If you already configured `.env`, keep using it. In Windows, check that the filename is `.env`, not `.env.txt`. Then run:
 
 ```console
 uv run nvidia-inference
@@ -54,32 +55,44 @@ uv run nvidia-inference-openai
 
 It sends the starter's request through the `openai` package, with automatic retries switched off so that it sends exactly one request. [The comparison](nvidia_walkthrough.md#14-compare-the-same-request-with-the-openai-sdk) explains what the SDK does for you and what it changes.
 
-Keep `.env` in this project root. The code explicitly resolves that root from its location in `src/eaas_llm_inference/`; see [the configuration explanation](http_and_requests.md#52-read-our-local-configuration-one-line-at-a-time). Neither command needs a key in a command-line argument, and the live starter does not use uv's `--env-file` option: its Python code explicitly reads `.env` with `dotenv_values`.
+The same model is also available through OpenRouter, a service that forwards requests to model providers. Follow the [OpenRouter walkthrough](openrouter_walkthrough.md) for the account, the privacy decision it depends on and the key, add `OPENROUTER_API_KEY` to the same `.env`, then run:
+
+```console
+uv run openrouter-inference
+uv run openrouter-inference-openai
+```
+
+The first command sends the request with Requests, the second through the OpenAI SDK, again with automatic retries off. [What the request changes](openrouter_walkthrough.md#8-what-the-request-changes-compared-with-the-nvidia-starter) compares it line by line with the NVIDIA starter.
+
+Keep `.env` in this project root. The code explicitly resolves that root from its location in `src/eaas_llm_inference/`; see [the configuration explanation](http_and_requests.md#52-read-our-local-configuration-one-line-at-a-time). No command needs a key in a command-line argument, and the live examples do not use uv's `--env-file` option: their Python code explicitly reads `.env` with `dotenv_values`.
 
 ## Understand the project files
 
 ```text
 llm_inference/
-    pyproject.toml           project metadata, dependencies and Ruff settings
-    uv.lock                  resolved package versions and distributions
-    .python-version          preferred Python version: 3.13
-    .gitignore               files excluded from ordinary Git tracking
-    .env.example             configuration field with an empty value
-    http_and_requests.md     the underlying mechanisms
-    nvidia_walkthrough.md    account setup and NVIDIA details
-    debugging.md             debugging the examples in VS Code
-    README.md                this guide
-    .venv/                   local Python environment created by uv
-    .env                     private key, created by you
-    outputs/                 key-free response captures, created when needed
-    .vscode/                 debugger, uv task and extension recommendations
+    pyproject.toml             project metadata, dependencies and Ruff settings
+    uv.lock                    resolved package versions and distributions
+    .python-version            preferred Python version: 3.13
+    .gitignore                 files excluded from ordinary Git tracking
+    .env.example               configuration fields with empty values
+    http_and_requests.md       the underlying mechanisms
+    nvidia_walkthrough.md      account setup and NVIDIA details
+    openrouter_walkthrough.md  account setup and OpenRouter details
+    debugging.md               debugging the examples in VS Code
+    README.md                  this guide
+    .venv/                     local Python environment created by uv
+    .env                       private keys, created by you
+    outputs/                   key-free response captures, created when needed
+    .vscode/                   debugger, uv task and extension recommendations
     src/
         eaas_llm_inference/
-            __init__.py                 marks the Python package
-            nvidia_inference.py         one live inference request
-            inspect_http_request.py     inspect a fake request without sending it
-            capture_nvidia_response.py  print and save a key-free live exchange
-            nvidia_inference_openai.py  the live request through the OpenAI SDK
+            __init__.py                     marks the Python package
+            nvidia_inference.py             one live inference request
+            inspect_http_request.py         inspect a fake request without sending it
+            capture_nvidia_response.py      print and save a key-free live exchange
+            nvidia_inference_openai.py      the NVIDIA request through the OpenAI SDK
+            openrouter_inference.py         the OpenRouter counterpart of nvidia_inference.py
+            openrouter_inference_openai.py  the OpenRouter request through the OpenAI SDK
 ```
 
 The project accepts Python 3.11 or newer; `.python-version` selects 3.13 for the usual course workflow. uv can use a suitable existing interpreter or obtain one when needed. [Python selection](https://docs.astral.sh/uv/concepts/python-versions/#python-version-files).
@@ -98,6 +111,8 @@ The project accepts Python 3.11 or newer; `.python-version` selects 3.13 for the
 | `nvidia-inference` | `main()` in [nvidia_inference.py](src/eaas_llm_inference/nvidia_inference.py) |
 | `capture-nvidia-response` | `main()` in [capture_nvidia_response.py](src/eaas_llm_inference/capture_nvidia_response.py) |
 | `nvidia-inference-openai` | `main()` in [nvidia_inference_openai.py](src/eaas_llm_inference/nvidia_inference_openai.py) |
+| `openrouter-inference` | `main()` in [openrouter_inference.py](src/eaas_llm_inference/openrouter_inference.py) |
+| `openrouter-inference-openai` | `main()` in [openrouter_inference_openai.py](src/eaas_llm_inference/openrouter_inference_openai.py) |
 
 For example, `nvidia-inference = "eaas_llm_inference.nvidia_inference:main"` means "import this module and call its `main` function." The launcher is created during installation. `uv run` selects the environment and runs that launcher. NVIDIA inference starts only when the function reaches `requests.post(...)` and NVIDIA accepts the request.
 
@@ -108,19 +123,21 @@ uv run python -m eaas_llm_inference.inspect_http_request
 uv run python -m eaas_llm_inference.nvidia_inference
 uv run python -m eaas_llm_inference.capture_nvidia_response
 uv run python -m eaas_llm_inference.nvidia_inference_openai
+uv run python -m eaas_llm_inference.openrouter_inference
+uv run python -m eaas_llm_inference.openrouter_inference_openai
 ```
 
 The key-loading path is intentionally tied to this course checkout and uv's editable installation. Keep `.env` in the project root. A separately distributed wheel would need its own configuration-location policy.
 
 ## Debug in VS Code
 
-The repository folder and this project folder both provide VS Code launch configurations: **LLM: Inspect HTTP (offline)**, **LLM: NVIDIA inference (live)**, **LLM: NVIDIA inference via OpenAI SDK (live)** and **LLM: Attach to uv/debugpy (5678)**. The short route:
+The repository folder and this project folder both provide VS Code launch configurations: **LLM: Inspect HTTP (offline)**, **LLM: NVIDIA inference (live)**, **LLM: NVIDIA inference via OpenAI SDK (live)**, **LLM: OpenRouter inference (live)**, **LLM: OpenRouter inference via OpenAI SDK (live)** and **LLM: Attach to uv/debugpy (5678)**. The short route:
 
 1. Install Microsoft's **Python** and **Python Debugger** extensions (the workspace recommends them) and run `uv sync` once.
 2. Open [inspect_http_request.py](src/eaas_llm_inference/inspect_http_request.py) and click the editor gutter beside a line to set a breakpoint.
 3. Select the **Run and Debug** view, choose **LLM: Inspect HTTP (offline)** and click **Start Debugging**. The debugger first pauses on line 1; click **Continue** to reach your breakpoint.
 
-The debugger controls only the Python process on your laptop; the model still runs at NVIDIA. **In a paused live session, Variables > Locals shows your API key in plain text**, so keep that view off shared screens and screenshots.
+The debugger controls only the Python process on your laptop; the model runs remotely: at NVIDIA, or for the OpenRouter examples at the provider OpenRouter forwards the request to, for the free variant currently NVIDIA. **In a paused live session, Variables > Locals shows your API key in plain text**, and `config` holds every key in `.env`, so keep that view off shared screens and screenshots.
 
 The [debugging guide](debugging.md) explains what a debugger does underneath, every step and button with shortcuts for Windows, Linux and macOS, WSL, stepping into Requests, attaching to a process started by uv, and inspecting a live response safely.
 
@@ -180,7 +197,10 @@ In VS Code, the recommended **Ruff** extension (`charliermarsh.ruff`) shows the 
 | The lockfile is out of date | After an intentional dependency edit, run `uv lock`, review the update, then sync. |
 | `NVIDIA_API_KEY is missing from the local configuration.` | Check the private `.env` in the project root; the script stopped before HTTP. |
 | NVIDIA returns an error | The starter prints NVIDIA's explanation from the response body above the traceback. Then use the [HTTP/API troubleshooting guide](nvidia_walkthrough.md#12-diagnose-the-layer-before-changing-the-prompt). |
-| `ReadTimeout` or `Read timed out` after about 60 seconds | The request was sent, but NVIDIA's free endpoint did not answer in time. Wait a few minutes before one more try; see [the free endpoint's limits](nvidia_walkthrough.md#13-understand-the-free-endpoints-limits). |
+| `ReadTimeout` or `Read timed out` after about 60 seconds; from an SDK example, `openai.APITimeoutError` with `ReadTimeout` in the traceback above it | The request was sent, but the service did not answer in time. Wait a few minutes before one more try; see [NVIDIA's free endpoint limits](nvidia_walkthrough.md#13-understand-the-free-endpoints-limits) or [OpenRouter's free-model limits](openrouter_walkthrough.md#10-understand-the-free-model-limits). |
 | `Refusing to print or save: the capture contains the key.` | The response unexpectedly contained your key, so nothing was printed or saved. Inspect it privately in the [debugger](debugging.md#7-debug-the-live-request-safely). |
+| `OPENROUTER_API_KEY is missing from the local configuration.` | Add the OpenRouter key to the private `.env` in the project root; the script stopped before HTTP. |
+| OpenRouter returns an error status | The Requests example prints OpenRouter's explanation above the traceback; the SDK example includes it in the exception message. It can contain your account's user ID, so keep it off shared screens. Use [the OpenRouter diagnosis table](openrouter_walkthrough.md#11-diagnose-a-failed-request); a 404 or 503 whose message mentions your data policy points to [the privacy switches](openrouter_walkthrough.md#4-set-the-privacy-switches-before-the-first-request). |
+| `OpenRouter reported an error: ...` | OpenRouter had already sent HTTP 200 when the provider failed. This line itself holds OpenRouter's error object, without a traceback; see [the error inside HTTP 200](openrouter_walkthrough.md#9-inspect-one-response). |
 
 The offline preview uses a literal fake credential and does not read `.env`, so it can be projected in class. Keep the actual key and any live authorization headers off the shared screen.

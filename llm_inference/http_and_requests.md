@@ -130,7 +130,7 @@ Why does an independent library work? The client and server agree on two things:
 
 **API** means *Application Programming Interface*: rules for using functionality from software. This API is exposed over HTTP. Requests implements the general communication; our code supplies the NVIDIA-specific address and data. The server can be written in another language and does not need to use Requests.
 
-Consequently, another HTTP client could send an equivalent request; the [OpenAI SDK comparison](nvidia_walkthrough.md#14-compare-the-same-request-with-the-openai-sdk) shows one. However, changing the host alone does not make every provider compatible: authentication, supported models and accepted fields must match that provider's contract. HTTP itself assigns no meaning to `temperature` or `max_tokens`.
+Consequently, another HTTP client could send an equivalent request; the [OpenAI SDK comparison](nvidia_walkthrough.md#14-compare-the-same-request-with-the-openai-sdk) shows one. However, changing the host alone does not make every provider compatible: authentication, supported models and accepted fields must match that provider's contract. The [OpenRouter walkthrough](openrouter_walkthrough.md#8-what-the-request-changes-compared-with-the-nvidia-starter) shows a concrete case: the same model needs another identifier and another field to switch off reasoning. HTTP itself assigns no meaning to `temperature` or `max_tokens`.
 
 ## 5. Map the Python arguments to the message
 
@@ -188,7 +188,7 @@ llm_inference/
     uv.lock               resolved dependency versions
     .python-version       default Python version
     .venv/                local Python environment created by uv
-    .env.example          shareable template with an empty field
+    .env.example          shareable template with empty fields
     .env                  your private configuration
     src/
         eaas_llm_inference/
@@ -197,13 +197,14 @@ llm_inference/
             inspect_http_request.py
 ```
 
-The current starter reads a private `.env` in the project root, beside `pyproject.toml`. [.env.example](.env.example) documents the expected configuration name with an empty field; it contains no credential:
+The current starter reads a private `.env` in the project root, beside `pyproject.toml`. [.env.example](.env.example) documents the expected configuration name with an empty field, beside the field for the [OpenRouter examples](openrouter_walkthrough.md); it contains no credential:
 
 ```dotenv
 NVIDIA_API_KEY=
+OPENROUTER_API_KEY=
 ```
 
-For local setup, create the private `.env` from this empty template and configure `NVIDIA_API_KEY` there. If you already have private configuration in this project root, keep using it. Leave the tracked `.env.example` empty. The actual key belongs only in the private configuration, never in Python source or another committed file.
+For local setup, create the private `.env` from this empty template and configure `NVIDIA_API_KEY` there; `OPENROUTER_API_KEY` can stay empty until the OpenRouter walkthrough. If you already have private configuration in this project root, keep using it. Leave the tracked `.env.example` empty. The actual key belongs only in the private configuration, never in Python source or another committed file.
 
 This is **plain `NAME=value` text**, not JSON or Python code. `.env` is a filename convention. An empty field is not a usable credential, so the script stops locally if that is all it finds. Creating the file alone does not change your terminal environment or send data anywhere; our explicit reader loads it. No Python literal should be replaced with a real key.
 
