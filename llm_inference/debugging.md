@@ -2,7 +2,7 @@
 
 A debugger lets you pause a running Python program, look at its variables and run it line by line. This guide uses the offline example first, then the live NVIDIA request. Labels follow VS Code's English interface. Each step names the menu or button first; keyboard shortcuts are optional and listed per platform in [section 5](#5-move-through-the-code).
 
-The debugger controls only the Python process on your laptop. In the live example it can follow the request until `requests.post(...)` sends it, and the response after it returns. It cannot step through the model, which runs at NVIDIA.
+The debugger controls only the Python process on your laptop. In the live examples it can follow the request until `requests.post(...)` or the SDK call sends it, and the response after it returns. It cannot step through the model, which runs remotely: at NVIDIA, or at the provider that OpenRouter forwards the request to.
 
 ## 1. What a debugger does
 
@@ -16,7 +16,7 @@ flowchart LR
         V[VS Code: buttons, Variables, Watch] <-->|JSON messages over a local connection| A[debugpy adapter]
         A <--> P[Your program: .venv Python with debugpy inside]
     end
-    P -->|HTTPS, only in the live example| N[NVIDIA API service]
+    P -->|HTTPS, only in the live examples| N[Remote API: NVIDIA, or OpenRouter forwarding to a provider]
 ```
 
 Python's standard library also contains a small terminal debugger built on the same mechanism, [pdb](https://docs.python.org/3/library/pdb.html). From the project root:
@@ -151,11 +151,11 @@ Revert the change afterwards: set `"justMyCode"` back to `true` and save. In a G
 
 ## 7. Debug the live request safely
 
-**A paused live session shows your API key.** As soon as the debugger pauses after the key has been read, **Variables > Locals** displays `api_key` and the `config` dictionary in plain text, without expanding anything. Hovering over `api_key` and expanding `response.request.headers` show it too. Therefore:
+**A paused live session shows your API key.** As soon as the debugger pauses after the key has been read, **Variables > Locals** displays `api_key` and the `config` dictionary in plain text, without expanding anything. `config` holds every entry of `.env`, so it shows your NVIDIA and OpenRouter keys alike, whichever example you debug. Hovering over `api_key` and expanding `response.request.headers` show the key too, and so does an exception that carries the request, such as the `HTTPError` from `raise_for_status()`. Therefore:
 
 - Collapse **Variables** before sharing your screen or taking a screenshot, and work with **Watch** and the **Debug Console**.
 - Use the offline configuration for projected demonstrations; inspect live responses privately.
-- If a key has been exposed, revoke it in NVIDIA Build and generate a new one.
+- If keys have been exposed, replace every key that was visible, each at its service: revoke an NVIDIA key in NVIDIA Build, archive an OpenRouter key ([OpenRouter walkthrough, section 5](openrouter_walkthrough.md#5-create-an-api-key)), then create new keys and update `.env`.
 
 Then, with your private `.env` configured as described in the [project README](README.md#run-the-project):
 
@@ -167,9 +167,11 @@ Then, with your private `.env` configured as described in the [project README](R
 
 If NVIDIA returns an error status, the debugger normally stops at `raise_for_status()` because **Uncaught Exceptions** is enabled in the **Breakpoints** view; inspect `response.status_code` and `response.text` there.
 
-**LLM: NVIDIA inference via OpenAI SDK (live)** debugs the [SDK version](nvidia_walkthrough.md#14-compare-the-same-request-with-the-openai-sdk) the same way. There, the key is also stored in the client object: expanding `client` in **Variables** shows `client.api_key`. Set a breakpoint on the final `print(...)` and inspect `completion`, the parsed answer as typed objects. An error status stops the debugger at the `client.chat.completions.create(` call with an exception such as `openai.RateLimitError`, whose message includes NVIDIA's explanation.
+**LLM: NVIDIA inference via OpenAI SDK (live)** debugs the [SDK version](nvidia_walkthrough.md#14-compare-the-same-request-with-the-openai-sdk) the same way. There, the key is also stored in the client object: expanding `client` in **Variables** shows `client.api_key` and properties such as `client.auth_headers`. Set a breakpoint on the final `print(...)` and inspect `completion`, the parsed answer as typed objects. An error status stops the debugger at the `client.chat.completions.create(` call with an exception such as `openai.RateLimitError`, whose message includes NVIDIA's explanation; expanding the exception's `request` shows the key as well.
 
-[What comes back?](http_and_requests.md#7-what-comes-back) explains every part of the response object, and the [response inspection](nvidia_walkthrough.md#10-inspect-one-response) explains each body field. To keep a key-free record of one exchange without the debugger, run `uv run capture-nvidia-response` ([project README](README.md#run-the-project)).
+**LLM: OpenRouter inference (live)** and **LLM: OpenRouter inference via OpenAI SDK (live)** debug the [OpenRouter examples](openrouter_walkthrough.md#14-debug-without-exposing-keys) the same way. The model then runs at the provider that OpenRouter forwards the request to.
+
+[What comes back?](http_and_requests.md#7-what-comes-back) explains every part of the response object, and the [response inspection](nvidia_walkthrough.md#10-inspect-one-response) explains each body field; for the OpenRouter examples, see [its response inspection](openrouter_walkthrough.md#9-inspect-one-response). To keep a key-free record of one exchange without the debugger, run `uv run capture-nvidia-response` ([project README](README.md#run-the-project)).
 
 ## 8. Other ways to start: current file and attach
 
@@ -185,9 +187,9 @@ To attach, first set a breakpoint in the offline example. Use the terminal insid
 uv run --with debugpy python -m debugpy --listen 127.0.0.1:5678 --wait-for-client -m eaas_llm_inference.inspect_http_request
 ```
 
-The terminal appears to wait: that is expected. In **Run and Debug**, select **LLM: Attach to uv/debugpy (5678)** and click **Start Debugging**. The process now continues to your breakpoint. An attached session does not pause on line 1. Finish this session before starting another on the same port. For the live request, use the same command with `-m eaas_llm_inference.nvidia_inference`.
+The terminal appears to wait: that is expected. In **Run and Debug**, select **LLM: Attach to uv/debugpy (5678)** and click **Start Debugging**. The process now continues to your breakpoint. An attached session does not pause on line 1. Finish this session before starting another on the same port. For a live request, use the same command with `-m eaas_llm_inference.nvidia_inference` or `-m eaas_llm_inference.openrouter_inference`.
 
-`--with debugpy` makes the debugger available for this invocation without editing `pyproject.toml` or `uv.lock`; its first use may download the package. `python -m debugpy` starts the debugger, while the second `-m` selects our module. `--listen` opens a debugger endpoint on this machine's loopback address, and `--wait-for-client` waits until VS Code attaches before running the module. This debug port is separate from the HTTPS connection to NVIDIA. [uv additional dependencies](https://docs.astral.sh/uv/concepts/projects/run/#requesting-additional-dependencies), [debugpy command-line usage](https://github.com/microsoft/debugpy#command-line-usage).
+`--with debugpy` makes the debugger available for this invocation without editing `pyproject.toml` or `uv.lock`; its first use may download the package. `python -m debugpy` starts the debugger, while the second `-m` selects our module. `--listen` opens a debugger endpoint on this machine's loopback address, and `--wait-for-client` waits until VS Code attaches before running the module. This debug port is separate from the HTTPS connection to NVIDIA or OpenRouter. [uv additional dependencies](https://docs.astral.sh/uv/concepts/projects/run/#requesting-additional-dependencies), [debugpy command-line usage](https://github.com/microsoft/debugpy#command-line-usage).
 
 For a persistent development dependency instead, run `uv add --dev debugpy` once and omit `--with debugpy` afterwards; the lockfile then records the debugger version. The project currently uses the temporary `--with` variant.
 
@@ -199,7 +201,7 @@ The repository-root [configuration](../.vscode/launch.json) provides the same la
 
 | File or setting | Role |
 |---|---|
-| [launch.json](.vscode/launch.json) | Defines the offline launch, the two live launches (Requests and OpenAI SDK), plus the attach configuration. |
+| [launch.json](.vscode/launch.json) | Defines the offline launch, the four live launches (NVIDIA and OpenRouter, each with Requests and with the OpenAI SDK), plus the attach configuration. |
 | `"type": "debugpy"` | Uses Microsoft's Python debugger. |
 | `"request": "launch"` | Starts a new Python process under the debugger; `"attach"` connects to a running one. |
 | `"module": "eaas_llm_inference.nvidia_inference"` | Equivalent module target to `python -m ...`; the module's `__main__` guard calls `main()`. |

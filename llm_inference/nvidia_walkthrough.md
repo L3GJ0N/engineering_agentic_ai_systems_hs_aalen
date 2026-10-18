@@ -10,9 +10,12 @@ The account instructions in section 2 combine public NVIDIA sources checked on *
 
 - A laptop with uv and an internet connection. Follow the [project setup](README.md) to prepare Python and the `requests` and `python-dotenv` packages in this project's `.venv`.
 - Access to your email inbox and a phone that can receive the requested verification message when registering. Phone verification was required in the instructor's registration.
+- The legal age of majority, 18 in Germany: NVIDIA's API Trial Terms of Service "can be accepted only by an adult of legal age of majority".
 - An NVIDIA account with access to the selected hosted endpoint.
 - A Build API key for your account.
 - The standalone project in `llm_inference` and a public teaching prompt.
+
+**Terms for your prompts.** NVIDIA's [Build page](https://build.nvidia.com/nvidia/nemotron-3.5-lightning-30b-a3b) states that its trial service "is governed by the NVIDIA API Trial Terms of Service" ([PDF](https://assets.ngc.nvidia.com/products/api-catalog/legal/NVIDIA%20API%20Trial%20Terms%20of%20Service.pdf), checked on 17 October 2026). They allow use "for internal testing and evaluation purposes" only, and let NVIDIA collect "User Content and Generated Content to improve NVIDIA products and services, including AI models", without identifying specific users. Send public teaching prompts only: no personal data, passwords, keys, confidential material or assessed work. [Who receives your prompt](openrouter_walkthrough.md#41-who-receives-your-prompt) compares this route with OpenRouter. Accepting these terms is your decision; if you decide against them, you need no NVIDIA account: use the offline exercises in [Classroom timing and blocked registration](#classroom-timing-and-blocked-registration).
 
 The project requires Python 3.11 or newer; `.python-version` selects 3.13 by default. Its `pyproject.toml` declares the libraries, package build backend and commands, and `uv.lock` records resolved dependency versions. uv prepares the local environment and installs our package from `src/eaas_llm_inference/` in editable mode. This is client software for your laptop, not the remote model.
 
@@ -126,13 +129,14 @@ This is a **Build inference key**. NVIDIA documents these keys as typically star
 
 ### 2.6. Use the key in the starter
 
-The current starter reads a private `.env` in `llm_inference`, beside `pyproject.toml`. The shareable [.env.example](.env.example) documents the expected name with an empty field:
+The current starter reads a private `.env` in `llm_inference`, beside `pyproject.toml`. The shareable [.env.example](.env.example) documents the expected names with empty fields; `OPENROUTER_API_KEY` belongs to the [OpenRouter examples](openrouter_walkthrough.md):
 
 ```dotenv
 NVIDIA_API_KEY=
+OPENROUTER_API_KEY=
 ```
 
-Create the private `.env` from this empty template and configure `NVIDIA_API_KEY` there. If it already exists in this project root, keep using it. Check the filename is `.env`, not `.env.txt`. Leave the tracked `.env.example` empty; the private `.env` is excluded from ordinary Git tracking. The saved credential does not include the word `Bearer`, which the script supplies when building the HTTP header.
+Create the private `.env` from this empty template and configure `NVIDIA_API_KEY` there; `OPENROUTER_API_KEY` can stay empty until the OpenRouter walkthrough. If it already exists in this project root, keep using it. Check the filename is `.env`, not `.env.txt`. Leave the tracked `.env.example` empty; the private `.env` is excluded from ordinary Git tracking. The saved credential does not include the word `Bearer`, which the script supplies when building the HTTP header.
 
 Do not insert a real key into Python source or replace any source-code literal with one. `"NVIDIA_API_KEY"` is a configuration name; `api_key` is the variable populated at runtime. If private configuration is not yet available, use the offline request inspection exercise.
 
@@ -181,7 +185,7 @@ For delayed account verification, students can inspect a request locally without
 
 Reserve **30 minutes of class time** for registration, verification and key creation. This is a teaching timebox, not a measured signup duration or a guarantee that everyone finishes. Students who finish early can inspect the model page and prepare their first request.
 
-At the end of the timebox, students still blocked record the stage and error message without including secrets, then continue with [offline request inspection](src/eaas_llm_inference/inspect_http_request.py), run as `uv run inspect-http-request`. Trace the prompt from the Python string to the JSON body, and explain why serializing JSON is different from tokenizing the model input. If a live instructor demonstration is available, students can inspect its response without receiving the instructor's key.
+At the end of the timebox, students still blocked record the stage and error message without including secrets. They, and students who decided against NVIDIA's terms, continue with [offline request inspection](src/eaas_llm_inference/inspect_http_request.py), run as `uv run inspect-http-request`. Trace the prompt from the Python string to the JSON body, and explain why serializing JSON is different from tokenizing the model input. If a live instructor demonstration is available, students can inspect its response without receiving the instructor's key.
 
 For a short tokenization exercise requiring no download, use the toy vocabulary `0 = "a"`, `1 = "b"`, `2 = " "`, with a rule that encodes one character at a time. Encode `"ab ba"` as `[0, 1, 2, 1, 0]`, then decode it. Explain why `"ac"` cannot be encoded without an additional rule for unknown characters. This illustrates the roles of vocabulary and encoding/decoding rules; it is not Nemotron's tokenizer and gives no evidence about the hosted model's actual token IDs or counts.
 
@@ -383,7 +387,7 @@ There are three ways to look at the complete result:
 - **Print it.** Temporarily add `print(result)` before the final print, run once and remove the line afterward. The parsed body contains no key.
 - **Pause in the debugger.** Set a breakpoint on the final `print(...)` line and start **LLM: NVIDIA inference (live)**, as described in the [debugging guide](debugging.md#7-debug-the-live-request-safely). Click **Continue** past the pause on the module's first line. At the breakpoint, add `result` to **Watch** and expand `choices`, `0` and `message`, then `usage`. For readable JSON, enter `import json` and then `print(json.dumps(result, indent=2, ensure_ascii=False))` in the **Debug Console**; the output appears there. Expanding `response.content` instead shows only one long bytes value, because the body is structured only after `response.json()`. If NVIDIA returned an error status, the debugger normally stops at `raise_for_status()`; inspect `response.status_code` and `response.text` there.
 
-**Keep the key out of view while debugging.** As soon as the debugger pauses after the key has been read, **Variables > Locals** displays `api_key` and the `config` dictionary in plain text, without expanding anything. Hovering over `api_key` in the editor and expanding `response.request.headers` reveal it as well. Collapse **Variables** before sharing your screen or taking a screenshot, and work with **Watch** and the **Debug Console**. If a key has been exposed, revoke it in NVIDIA Build and generate a new one.
+**Keep the key out of view while debugging.** As soon as the debugger pauses after the key has been read, **Variables > Locals** displays `api_key` and the `config` dictionary in plain text, without expanding anything; `config` holds every entry of `.env`, including an OpenRouter key if you added one. Hovering over `api_key` in the editor and expanding `response.request.headers` reveal it as well. Collapse **Variables** before sharing your screen or taking a screenshot, and work with **Watch** and the **Debug Console**. If keys have been exposed, replace every key that was visible: revoke the NVIDIA key in NVIDIA Build, and archive an OpenRouter key ([OpenRouter walkthrough, section 5](openrouter_walkthrough.md#5-create-an-api-key)); then create new keys and update `.env`.
 
 Absence and an observed empty string have different meanings. A returned reasoning explanation is generated text, not a dump of all hidden neural computation. A completed HTTP request is not evidence that the answer is correct. The selected service's exact response must be inspected; do not fabricate missing counts, probabilities or token IDs.
 
@@ -483,3 +487,5 @@ The defaults were read from `openai` 3.29.0 on 14 October 2026; check them again
 **What stays the same.** Both programs run locally, send one HTTPS request with a JSON body to the same endpoint and wait while NVIDIA's model runs. The SDK saves code; it changes neither the essential message nor where the model runs. Use the Requests starter to see the HTTP mechanics, and an SDK when an application benefits from typed responses, built-in retries and streaming helpers.
 
 NVIDIA's own example also enables thinking, requests up to 16,384 tokens and streams the answer with `stream=True`, printing reasoning text as it arrives. Streaming and reasoning output are separate topics for a later example.
+
+The same model is also available through OpenRouter, a service that forwards requests to model providers. The [OpenRouter walkthrough](openrouter_walkthrough.md) sends this prompt that way, with OpenRouter's model identifier and its own thinking switch, and compares both services.
