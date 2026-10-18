@@ -41,9 +41,9 @@ When the program has finished, pdb restarts it and pauses on line 1 again; type 
 
 Install Microsoft's **Python** (`ms-python.python`) and **Python Debugger** (`ms-python.debugpy`) extensions; the workspace recommends them together with the Ruff extension. No Copilot subscription is required.
 
-Use **File > Open Folder** and select either the outer **repository folder** (`engineering_agentic_ai_systems_hs_aalen`, or `engineering_agentic_ai_systems_hs_aalen-main` from a ZIP download) or **`llm_inference` itself**. Both folders contain launch configurations with the same **LLM:** names: the repository-root [launch.json](../.vscode/launch.json) points into this project, while the project-local [launch.json](.vscode/launch.json) uses local paths. VS Code reads the opened folder's configuration; it does not discover every nested `.vscode` folder.
+Open the course workspace: **File > Open Workspace from File**, then select `engineering_agentic_ai_systems.code-workspace` in the **repository folder** (`engineering_agentic_ai_systems_hs_aalen`, or `engineering_agentic_ai_systems_hs_aalen-main` from a ZIP download). The **Explorer** then shows three folders: **repository**, **llm_inference** and **token_lab**. Each project folder brings its own [launch.json](.vscode/launch.json), `uv sync` task and Python environment, so VS Code uses this project's `.venv` for its files. If you open the repository folder with **File > Open Folder** instead, VS Code offers to open the workspace in a notification; choose **Open Workspace**. To work on this project alone, open **`llm_inference` itself** with **File > Open Folder**; the same configurations apply.
 
-Open **Terminal > New Terminal**. The commands in this guide run in `llm_inference`; if the terminal starts at the repository root, first run `cd llm_inference`. Then prepare the environment:
+Open **Terminal > New Terminal**; in the workspace, VS Code asks for the folder, so choose **llm_inference**. The commands in this guide run there; if a terminal starts elsewhere, first run `cd llm_inference`. Then prepare the environment:
 
 ```console
 uv sync
@@ -72,7 +72,7 @@ The offline example uses a fake credential and sends nothing, so it is safe to p
 1. Open [inspect_http_request.py](src/eaas_llm_inference/inspect_http_request.py). Click the editor gutter left of the line `prepared: requests.PreparedRequest = requests.Request(`. A red dot marks the breakpoint.
 2. Select the **Run and Debug** icon in the Activity Bar: the play triangle with a small bug. Choose **LLM: Inspect HTTP (offline)** in the dropdown at the top and click the green **Start Debugging** triangle beside it. **Run > Start Debugging** does the same.
 3. Watch the start:
-   - **The pre-launch task runs `uv sync`.** It appears in the terminal panel's list as `uv: sync` (project folder open) or `uv: sync llm_inference` (repository root open). A check mark means uv succeeded; only then does VS Code start Python. If uv fails, VS Code asks whether to debug anyway: choose **Abort** and read the task's output.
+   - **The pre-launch task runs `uv sync`.** It appears in the terminal panel's list as `uv: sync`. A check mark means uv succeeded; only then does VS Code start Python. If uv fails, VS Code asks whether to debug anyway: choose **Abort** and read the task's output.
    - **A terminal named Python Debug Console shows the launch command.** On Windows it looks similar to:
 
      ```text
@@ -145,7 +145,7 @@ The supplied configurations set `"justMyCode": true`. Your program runs the same
 | **Step Into** on the preparation line | Behaves like **Step Over** | Opens Requests' `models.py` |
 | Breakpoints in library files | Ignored | Hit |
 
-To try it, change `"justMyCode"` to `false` in **LLM: Inspect HTTP (offline)** in the `launch.json` of the folder you opened: `.vscode/launch.json` at the repository root, or `llm_inference/.vscode/launch.json`. Save and start a new session; the file is read when a session starts. **Step Into** on the preparation line now opens `models.py` in `.venv`'s `site-packages` folder: first the `Request` constructor, and after **Step Out** and another **Step Into**, the `prepare()` method that builds the headers and body. Everything you step through still runs locally.
+To try it, change `"justMyCode"` to `false` in **LLM: Inspect HTTP (offline)** in `llm_inference/.vscode/launch.json`. Save and start a new session; the file is read when a session starts. **Step Into** on the preparation line now opens `models.py` in `.venv`'s `site-packages` folder: first the `Request` constructor, and after **Step Out** and another **Step Into**, the `prepare()` method that builds the headers and body. Everything you step through still runs locally.
 
 Revert the change afterwards: set `"justMyCode"` back to `true` and save. In a Git clone, the **Source Control** view does the same: right-click `launch.json` and choose **Discard Changes**. [Python debugging in VS Code](https://code.visualstudio.com/docs/python/debugging).
 
@@ -197,7 +197,7 @@ If an attached process remains active after disconnecting, focus its terminal an
 
 ## 9. What the launch configuration says
 
-The repository-root [configuration](../.vscode/launch.json) provides the same launches as the project-local one, with paths prefixed by `llm_inference/` and the task name `uv: sync llm_inference`:
+The configuration lives in this project's `.vscode` folder; the course workspace and an opened `llm_inference` folder both use it:
 
 | File or setting | Role |
 |---|---|
@@ -207,7 +207,7 @@ The repository-root [configuration](../.vscode/launch.json) provides the same la
 | `"module": "eaas_llm_inference.nvidia_inference"` | Equivalent module target to `python -m ...`; the module's `__main__` guard calls `main()`. |
 | `"python"` and its `"windows"` override | Explicitly select `.venv`'s interpreter on each platform. uv itself is not a Python interpreter. |
 | `"preLaunchTask": "uv: sync"` | Runs the task declared in [tasks.json](.vscode/tasks.json) before starting Python. That task executes ordinary `uv sync` in the project root. |
-| `"cwd": "${workspaceFolder}"` | Makes the project folder the working directory. |
+| `"cwd": "${workspaceFolder}"` | Makes the project folder the working directory; in the workspace, `${workspaceFolder}` is the folder the configuration belongs to. |
 | `"console": "integratedTerminal"` | Runs the program in the **Python Debug Console** terminal, where its printed output appears. |
 | `"envFile": ""` | Disables the extension's automatic `.env` loading. Our Python code still reads its private configuration explicitly with `dotenv_values`. |
 | `"stopOnEntry": true` | Pauses before the module's first line, even without a breakpoint. |
@@ -221,7 +221,7 @@ The launch route is `uv sync -> .venv -> VS Code/debugpy -> Python module -> mai
 
 | Observation | Check |
 |---|---|
-| The supplied configurations are missing, or VS Code asks to create `launch.json` | Open either `llm_inference` or the outer repository folder, the one that contains `README.md` and `llm_inference`; configurations are supplied there. Close the debugger-selection popup and try **View > Command Palette > Developer: Reload Window** if these files have just been added. An unrelated parent folder needs its own configuration. |
+| The supplied configurations are missing, or VS Code asks to create `launch.json` | Open the course workspace, `engineering_agentic_ai_systems.code-workspace` in the repository folder, or `llm_inference` itself; the repository folder opened on its own has no debug configurations. Close the debugger-selection popup and try **View > Command Palette > Developer: Reload Window** if these files have just been added. |
 | Every session pauses on line 1 | That is `stopOnEntry`; click **Continue**. |
 | VS Code reports that the pre-launch task terminated with an exit code | `uv sync` failed. Choose **Abort**, read the task's terminal output and run `uv sync` in the project folder. |
 | The `uv: sync` task cannot find uv | Run `uv --version` in VS Code's terminal; restart VS Code after installing uv so it gets the updated PATH. |

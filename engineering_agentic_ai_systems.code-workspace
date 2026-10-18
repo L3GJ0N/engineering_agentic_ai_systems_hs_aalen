@@ -1,0 +1,25 @@
+{
+    // Open with File > Open Workspace from File. Each example project is its
+    // own folder here, so VS Code uses that project's .venv, tasks and debug
+    // configurations from the project's .vscode folder.
+    "folders": [
+        { "name": "repository", "path": "." },
+        { "name": "llm_inference", "path": "llm_inference" },
+        { "name": "token_lab", "path": "token_lab" }
+    ],
+    "settings": {
+        // The projects appear as their own folders above; hide them inside
+        // "repository" so that no file is shown twice.
+        "files.exclude": {
+            "llm_inference": true,
+            "token_lab": true
+        }
+    },
+    "extensions": {
+        "recommendations": [
+            "ms-python.python",
+            "ms-python.debugpy",
+            "charliermarsh.ruff"
+        ]
+    }
+}
