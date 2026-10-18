@@ -2,7 +2,7 @@
 
 This walkthrough sends the prompt and settings of the request in the [NVIDIA walkthrough](nvidia_walkthrough.md) to the same model a second way: through **OpenRouter**, a service that forwards requests to model providers. Read it alongside [openrouter_inference.py](src/eaas_llm_inference/openrouter_inference.py). [HTTP and the Python Requests library](http_and_requests.md) explains the request itself; its offline exercise needs no account.
 
-The facts in this guide were checked on **17 October 2026** against OpenRouter's documentation, its public model and provider data, its terms and NVIDIA's terms. OpenRouter shows its sign-up window, its first-time dialog, its key dialog and its privacy settings only during sign-up or after signing in. Their labels below come from OpenRouter's documentation and public site code, and in places from user reports; the guide says which. They have not yet been checked in a course run-through. If your screen differs, follow the meaning of a step rather than its exact words. Free access, limits and data policies can change; this guide does not promise that the free variant stays available or free.
+The facts in this guide were checked on **17 October 2026** against OpenRouter's documentation, its public model and provider data, its terms and NVIDIA's terms. OpenRouter shows its sign-up window, its first-time dialog, its key dialog and its settings pages only during sign-up or after signing in. The privacy page ([section 4.3](#43-decide-then-set-each-switch)) and the workspace's menu were checked on the instructor's account on 18 October 2026. The other labels come from OpenRouter's documentation and public site code, and in places from user reports; the guide says which. They have not yet been checked in a course run-through. If your screen differs, follow the meaning of a step rather than its exact words. Free access, limits and data policies can change; this guide does not promise that the free variant stays available or free.
 
 ## 1. What OpenRouter adds between your laptop and the model
 
@@ -123,33 +123,35 @@ Send public teaching prompts only: no personal data about yourself or others, no
 
 ### 4.3. Decide, then set each switch
 
-**Decide first.** Allowing a provider that may train on your prompts is your decision; the NVIDIA starter falls under the same NVIDIA terms. The switch applies to your whole account, not only to the course model: on 17 October 2026, 11 of the 16 free text models in OpenRouter's default model list had an endpoint that may train. You can switch it off again later, for example when the course no longer needs it; prompts already sent stay under NVIDIA's terms. If you decide against it, still carry out steps 1 to 3 below with this switch off, because its default is not documented. Then archive the first-time dialog's **Default key** as described in [section 5](#5-create-an-api-key), because an unused key is still a valid credential; if you pasted it into `.env`, delete that line. Continue with [section 15](#15-classroom-timing-and-blocked-registration).
+**Decide first.** Allowing a provider that may train on your prompts is your decision; the NVIDIA starter falls under the same NVIDIA terms. The switch applies to your whole account, not only to the course model: on 17 October 2026, 11 of the 16 free text models in OpenRouter's default model list had an endpoint that may train. You can switch it off again later, for example when the course no longer needs it; prompts already sent stay under NVIDIA's terms. If you decide against it, still carry out steps 1 to 3 below and make sure this switch is off: OpenRouter does not document its default, and on the instructor's account it was on without any change. Then archive the first-time dialog's **Default key** as described in [section 5](#5-create-an-api-key), because an unused key is still a valid credential; if you pasted it into `.env`, delete that line. Continue with [section 15](#15-classroom-timing-and-blocked-registration).
 
-1. Open **Settings → Privacy** ([openrouter.ai/settings/privacy](https://openrouter.ai/settings/privacy)).
-2. Set the switches as in the table below. OpenRouter's documentation describes these settings without naming their labels. The labels below were reported in one community issue on 24 September 2026; they match the wording of OpenRouter's guardrail API, for example "allows free endpoints that train on request data". Defaults for new accounts are not documented, so check every switch.
-3. Click **Save changes**. The same report says that flipping a switch alone does not store it.
+1. Open the account's **Privacy** page, [openrouter.ai/settings/privacy](https://openrouter.ai/settings/privacy). It holds "Restrictions to apply globally across the account". It is not the **Settings** entry in your workspace's sidebar, which only edits the workspace's name and description.
+2. Under **Data Policies**, set the switches as in the table below, which follows the page from top to bottom. The labels and quoted descriptions were checked on the instructor's account on 18 October 2026. OpenRouter does not document the defaults. On that account, with no setting changed, a request to the course model reached NVIDIA's endpoint, so free endpoints that train were allowed there by default. Check every switch on yours.
+3. Reload the page and check that each switch kept its position. The page showed no separate save button on 18 October 2026.
 
-| Switch (reported label) | What it controls | For this course |
+| Switch | What the page says | For this course |
 |---|---|---|
-| **Allow free endpoints that train on request data** | Whether free endpoints whose provider may train on your prompts can receive your requests. | **On** only if you decided to use this route; with it off, the course model is unreachable. |
-| **Allow free endpoints that publish prompts** | Free endpoints that may publish prompts. | Off: OpenRouter's undocumented provider data marks NVIDIA as not publishing prompts, so the course model does not need it. |
-| **Allow paid endpoints that train on request data** | The same for paid models. | Off: the course uses no paid models. |
-| **Allow 1% data discount in workspaces** | Whether OpenRouter may use your prompts and completions to improve its product, for a 1% discount. | **Off**. It is off by default. |
-| Zero Data Retention (ZDR), one switch per model group | Routing only to endpoints that keep no data. | Off for **All other models**: NVIDIA's free endpoint retains prompts and would be excluded. |
+| **Zero Data Retention**, one switch per model group, among them **All other models** | "Only route to provider endpoints that don't store your data." For **All other models**: "All other model requests will require ZDR endpoints." | Off for **All other models**: NVIDIA's free endpoint retains prompts and would be excluded. |
+| **Allow paid endpoints that train on request data** | "Enable providers that may anonymously use data for training purposes." | Off: the course uses no paid models. |
+| **Allow free endpoints that train on request data** | "Enable providers serving free models that may retain and/or train on prompts and completions." | **On** only if you decided to use this route; with it off, the course model is unreachable. **Off** if you decided against it. |
+| **Allow free endpoints that publish prompts** | "Enable providers serving free models that may publish prompts and completions to public datasets." | Off: OpenRouter's undocumented provider data marks NVIDIA as not publishing prompts, so the course model does not need it. |
+| **Allow 1% data discount in workspaces** | "Allow workspaces to consent to OpenRouter using your inputs/outputs to improve the product. Each workspace consents separately." | **Off**. It is off by default. |
+
+Further down, the same page lists allowed and ignored **Providers** and an **Eligibility Preview** of the "Providers and models available based on your account settings". The course needs no change there.
 
 OpenRouter's pricing table lists "Data Policy-Based Routing" as not included on the Free plan, the plan you are on without a purchase; how this affects these switches is not documented. If a switch is missing or cannot be changed, note it and continue: your first request shows whether the course model is reachable ([section 11](#11-diagnose-a-failed-request)).
 
-Keep the discount off. On free requests it saves nothing, since 1% of $0 is $0, and under OpenRouter's [Terms](https://openrouter.ai/terms), section 6.2, opting in grants OpenRouter a "perpetual, irrevocable" licence to the logged content, which includes selling it in anonymized form. OpenRouter states that it "has never shared, sold, or licensed underlying prompt data to any third party". The documentation places this option in different settings pages; wherever you find it, leave it off.
+Keep the discount off. On free requests it saves nothing, since 1% of $0 is $0, and under OpenRouter's [Terms](https://openrouter.ai/terms), section 6.2, opting in grants OpenRouter a "perpetual, irrevocable" licence to the logged content, which includes selling it in anonymized form. OpenRouter states that it "has never shared, sold, or licensed underlying prompt data to any third party". On the account's Privacy page, this switch only allows workspaces to give that consent, each on its own; leave it off.
 
 A separate option, **Input & Output Logging** in the workspace's **Observability** settings, stores your prompts and answers for you to review. The data is "retained for a minimum of 3 months", and longer at OpenRouter's discretion unless you request deletion. It is off by default; leave it off. [Data collection](https://openrouter.ai/docs/guides/privacy/data-collection), [Input & Output Logging](https://openrouter.ai/docs/guides/features/input-output-logging).
 
-**Checkpoint:** the switches are set as you decided and saved.
+**Checkpoint:** the switches are set as you decided, and still are after a reload.
 
 ## 5. Create an API key
 
 If you copied the key from the first-time dialog, you can use it. This section creates a key with your own settings.
 
-1. Open the **Keys** page. The button **Get API Key** on OpenRouter's home page leads there, as does [openrouter.ai/workspaces/default/keys](https://openrouter.ai/workspaces/default/keys). Older links such as `openrouter.ai/settings/keys` redirect to it.
+1. Open **API Keys** in your workspace's sidebar. The button **Get API Key** on OpenRouter's home page leads there, as does [openrouter.ai/workspaces/default/keys](https://openrouter.ai/workspaces/default/keys). Older links such as `openrouter.ai/settings/keys` redirect to it.
 2. Click **Create API Key**. OpenRouter's documentation uses this name; a tutorial from June 2026 shows **Create**.
 3. Enter a recognizable name, such as `eaas-openrouter`.
 4. Set a **Credit limit**. OpenRouter recommends a limit on every key. Free requests cost 0 credits, so a small limit such as 1 does not block them; it caps what the key could spend if your account ever holds credits.
@@ -159,7 +161,7 @@ If you copied the key from the first-time dialog, you can use it. This section c
 
 **Checkpoint:** you have created a key and stored it privately. No model has run yet. If you did not keep the first-time dialog's **Default key**, archive it now, as described below: an unused key is still a valid credential.
 
-**If a key leaks.** "OpenRouter is a GitHub secret scanning partner" and e-mails you if it determines that a key has been compromised; do not rely on this for a key shown in a screenshot, a chat or a ZIP file. Archive an exposed key in **Settings → Security** ([openrouter.ai/settings/security](https://openrouter.ai/settings/security)): archiving is permanent, while disabling can be undone. Then create a new key and update `.env`. [Authentication](https://openrouter.ai/docs/api_reference/authentication), [Security settings](https://openrouter.ai/docs/guides/overview/auth/security-settings). Under OpenRouter's Terms you are "responsible for all activity and charges under its account or API Credentials, whether or not authorized by you".
+**If a key leaks.** "OpenRouter is a GitHub secret scanning partner" and e-mails you if it determines that a key has been compromised; do not rely on this for a key shown in a screenshot, a chat or a ZIP file. Archive an exposed key on the account's **Security** page, [openrouter.ai/settings/security](https://openrouter.ai/settings/security), in its **Key safety** tab: archiving is permanent, while disabling can be undone. Then create a new key and update `.env`. [Authentication](https://openrouter.ai/docs/api_reference/authentication), [Security settings](https://openrouter.ai/docs/guides/overview/auth/security-settings). Under OpenRouter's Terms you are "responsible for all activity and charges under its account or API Credentials, whether or not authorized by you".
 
 **One account per person.** The Terms prohibit creating "multiple accounts as a single user, for purposes of bypassing or circumventing use limits on the Site or Service or for any other reason". If you already have an OpenRouter account, use it for the course. Further keys do not raise any limit.
 
@@ -292,7 +294,8 @@ OpenRouter documents these limits in [Limits](https://openrouter.ai/docs/api_ref
 
 | Where | What it shows |
 |---|---|
-| **Activity** ([openrouter.ai/activity](https://openrouter.ai/activity)) | Requests, tokens and spend per model, provider and key. |
+| The workspace's **Overview** ([openrouter.ai/workspaces/default](https://openrouter.ai/workspaces/default)) | This week's requests, tokens and spend per model. |
+| **Activity** ([openrouter.ai/activity](https://openrouter.ai/activity)) | Requests, tokens and spend per model, provider and key, for the whole account; it can be filtered by workspace. |
 | **Logs** ([openrouter.ai/logs](https://openrouter.ai/logs)) | One row per completed generation: date, model, provider, status, attempts and latency, with the cost in its detail view. Requests rejected before reaching a provider are not listed, and no content is stored unless you switched on logging ([section 4.3](#43-decide-then-set-each-switch)). |
 | `GET https://openrouter.ai/api/v1/key` | Since 16 September 2026, `free_model_daily_requests` with `used`, `limit` and `remaining`. It runs no model, but it is an authenticated request with your key; the course has no script for it. |
 
@@ -355,7 +358,7 @@ The `extra_body` mechanism is the same as in the NVIDIA SDK example, where it ca
 | Registration | NVIDIA account, with phone verification and visual CAPTCHAs in the instructor's registration | E-mail address and password, or Google or GitHub; no phone number |
 | Key | Build API key, typically starting with `nvapi-` | Key starting with `sk-or-v1-`, with an optional credit limit and expiry |
 | Free use | Free endpoint for prototyping; the site names "Up to 40 rpm" | 20 requests per minute and 50 per day per account |
-| Seeing your usage | No quota endpoint or rate-limit headers documented | Activity and Logs pages; `GET /api/v1/key` |
+| Seeing your usage | No usage page, quota endpoint or rate-limit headers documented; according to user reports, the account shows only its rate limit | Overview, Activity and Logs pages; `GET /api/v1/key` |
 | Thinking off | `chat_template_kwargs` with `enable_thinking: false` | `reasoning` with `enabled: false` |
 | Extra response fields | Reasoning text in `reasoning_content`, when thinking is on | `provider`, `usage.cost`, `native_finish_reason`, `message.reasoning` |
 | Pending work and late failures | HTTP 202: pending, poll with `NVCF-REQID` | No 202, but a failure can arrive inside HTTP 200 |
@@ -365,6 +368,8 @@ The `extra_body` mechanism is the same as in the NVIDIA SDK example, where it ca
 | Payment | Free prototyping access | Free plan for free variants; optional prepaid credits for paid models |
 
 The NVIDIA column summarizes the [NVIDIA walkthrough](nvidia_walkthrough.md), where its sources are given. The listed context of 1,048,576 tokens, the `reasoning_content` field of NVIDIA's own example and the trial terms come from NVIDIA's [Build page](https://build.nvidia.com/nvidia/nemotron-3.5-lightning-30b-a3b), checked on 17 October 2026. Both context figures are "1M" (2^20 and 10^6) and are listed values; neither shows the largest prompt the deployed service accepts.
+
+**Why the usage records differ.** OpenRouter passes provider prices through and charges a fee when you buy credits; recording every generation, with its tokens, cost and provider, is part of what it sells. NVIDIA's [NIM FAQ](https://docs.api.nvidia.com/nim/docs/product) offers Developer Program members "free access to NIM API endpoints for prototyping". For production, you run NIM yourself, which "requires an NVIDIA AI Enterprise license", starting "at $4500 per GPU per year". Nothing on the hosted endpoint is billed per request. A user reported in January 2026 that the account shows only "Your API Rate Limit: Up to 40 RPM" ([forum post](https://forums.developer.nvidia.com/t/some-models-return-no-output-via-nvidia-api-ibm-granite-others-no-api-usage-dashboard-visible/358565)); a [feature request](https://forums.developer.nvidia.com/t/usage-tracking-in-nvidia-nim-api/367730) for a usage dashboard or endpoint, April 2026, had no answer on 18 October 2026. On the NVIDIA route, what your script prints is the only record.
 
 ### Short in-class investigations
 
@@ -386,7 +391,7 @@ The [debugging guide](debugging.md) applies unchanged: **LLM: OpenRouter inferen
 - Neither key is in the process environment: the code reads `.env` itself, and the launch configurations set `"envFile": ""`.
 - **`response.elapsed` ends at OpenRouter's early `200 OK`,** before generation ([section 9](#9-inspect-one-response)), so it cannot be compared with the NVIDIA starter's value.
 
-Collapse **Variables** before sharing your screen or taking a screenshot, and work with **Watch** and the **Debug Console**. If keys have been exposed, replace every key that was visible: archive the OpenRouter key in **Settings → Security** ([section 5](#5-create-an-api-key)) and revoke an NVIDIA key in NVIDIA Build ([NVIDIA walkthrough, section 2.5](nvidia_walkthrough.md#25-generate-and-keep-the-build-api-key)), then create new keys and update `.env`.
+Collapse **Variables** before sharing your screen or taking a screenshot, and work with **Watch** and the **Debug Console**. If keys have been exposed, replace every key that was visible: archive the OpenRouter key on the account's **Security** page ([section 5](#5-create-an-api-key)) and revoke an NVIDIA key in NVIDIA Build ([NVIDIA walkthrough, section 2.5](nvidia_walkthrough.md#25-generate-and-keep-the-build-api-key)), then create new keys and update `.env`.
 
 ## 15. Classroom timing and blocked registration
 
