@@ -1,0 +1,61 @@
+[project]
+name = "eaas-token-lab"
+version = "0.1.0"
+description = "Course examples: the tokens a model's published tokenizer makes of a text and of a chat request"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "huggingface-hub>=1.0,<3",
+    "jinja2>=3.1.6,<4",
+    "tokenizers>=0.22.2,<0.24",
+]
+
+[project.scripts]
+tokenize-text = "eaas_token_lab.tokenize_text:main"
+tokenize-chat = "eaas_token_lab.tokenize_chat:main"
+
+[build-system]
+requires = ["uv_build>=0.8.19,<0.9.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "mypy>=1.18,<2",
+    "pytest>=8.4,<10",
+    "ruff>=0.17.0,<0.18",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.mypy]
+strict = true
+files = ["src", "tests"]
+
+[tool.ruff]
+line-length = 88
+# Code blocks in the Markdown guides are excerpts. Check only Python files.
+extend-exclude = ["*.md"]
+
+[tool.ruff.lint]
+select = [
+    "E", "W",  # pycodestyle: PEP 8 layout
+    "F",       # Pyflakes: unused imports, undefined names
+    "I",       # isort: import order
+    "N",       # pep8-naming
+    "D",       # pydocstyle: docstrings
+    "UP",      # pyupgrade: modern syntax for the supported Python versions
+    "ANN",     # flake8-annotations: type hints on every function
+    "B",       # flake8-bugbear: likely bugs
+    "S",       # flake8-bandit: security, e.g. HTTP requests without a timeout
+    "SIM",     # flake8-simplify
+    "PTH",     # prefer pathlib over os.path
+    "RUF",     # Ruff's own checks
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests use plain assert statements and need no docstrings for each test.
+"tests/*" = ["S101", "D103"]
+
+[tool.ruff.lint.pydocstyle]
+convention = "google"

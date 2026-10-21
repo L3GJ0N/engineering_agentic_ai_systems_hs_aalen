@@ -1,6 +1,15 @@
 # Working on these teaching examples
 
-This repository contains the shareable Python examples for **Engineering Agentic AI Systems**, a master's course in computer science and data engineering at HS Aalen. Keep work in this repository; the separate lecture-planning workspace is outside the scope of ordinary example changes.
+This repository contains the shareable Python examples for **Engineering Agentic AI Systems**, a master's course in computer science and data engineering at HS Aalen. It holds what students use: starters, exercises and guides.
+
+## The private companion repository
+
+Lecture planning, the slide decks and their build scripts, research code, instructor tools, exercise solutions and captured live responses live in a separate private repository. It is not part of this one and must never become visible through it:
+
+- Do not import from it, link to it or name its paths here. Student code must run with this repository alone.
+- Bring nothing over wholesale. When a prototype from the companion becomes teaching material, write a smaller, explained version here and re-verify every fact for publication.
+- Material students need belongs here; material only the instructor needs belongs there. When unsure, ask.
+- Ordinary example changes stay in this repository; work in the companion happens only when the user asks for it.
 
 ## Teaching priorities
 
@@ -13,9 +22,10 @@ This repository contains the shareable Python examples for **Engineering Agentic
 
 - Use uv for dependency and environment management. Do not introduce pip-based setup instructions.
 - Keep the packaged `src/eaas_llm_inference/` layout and independent `llm_inference/pyproject.toml` project. Future examples may have their own uv projects.
+- `token_lab/` (package `src/eaas_token_lab/`) is the second independent uv project: two short, explained scripts with everything fixed in the code, `tokenize_text.py` (a text alone) and `tokenize_chat.py` (after the chat template). They download only public tokenizer files, pinned to a commit, and never send a Hugging Face login (`token=False`). They run no model and contact no provider; the tests run offline. Label every token view as a local reconstruction unless a provider returned the tokens. Extend the series in the same style: one question per script, explained from the user's point of view.
 - Use ordinary `uv sync` and `uv run` for student workflows. `--locked` is optional for strict verification/CI, not the required introductory command.
 - Keep `pyproject.toml` and `uv.lock` consistent; use uv to update the lockfile.
-- Preserve VS Code configurations at both the repository root and example-project root. Root launch/task paths must point to `llm_inference`, including the correct Windows versus Linux/macOS interpreter paths.
+- VS Code: each example project keeps its own `.vscode` folder (launch configurations with Windows and Linux/macOS interpreter paths, a `uv: sync` task, `settings.json` pointing to its `.venv`, extension recommendations). The multi-root workspace `engineering_agentic_ai_systems.code-workspace` at the repository root lists the repository and every project as folders; the root `.vscode` holds only extension recommendations, so no configuration appears twice. A new project gets its own `.vscode` folder and an entry in the workspace file.
 
 ## Credentials and execution
 

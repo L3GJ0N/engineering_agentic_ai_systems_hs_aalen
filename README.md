@@ -2,7 +2,7 @@
 
 Python teaching examples for the master's course **Engineering Agentic AI Systems**. The examples build understanding of hosted LLM inference and the systems around a model, beginning with small, readable Python programs.
 
-## Current example
+## Current examples
 
 [llm_inference](llm_inference/README.md) is an independent, packaged uv project. It includes:
 
@@ -13,6 +13,12 @@ Python teaching examples for the master's course **Engineering Agentic AI System
 - The same model through OpenRouter, a service that forwards requests to model providers, again as a direct Requests call and through the OpenAI SDK.
 - Detailed HTTP, JSON, credential configuration, NVIDIA account and OpenRouter account walkthroughs.
 - VS Code launch and attach configurations for Windows, Linux and macOS, with a debugging guide.
+
+[token_lab](token_lab/README.md) is a second uv project. It shows the tokens a model reads for a prompt, using the tokenizer and chat template the model's publisher released, entirely on your laptop. It includes:
+
+- Two short, explained scripts: the tokens of the prompt alone, and the tokens the model actually reads after the chat template, with the special tokens marked.
+- How to find a model's tokenizer on Hugging Face.
+- A guide to what a hosted API lets you see of a model and how to find out, with exercises: [what_you_can_access.md](token_lab/what_you_can_access.md).
 
 ## Start here
 
@@ -43,11 +49,25 @@ To send the same prompt to the same model through OpenRouter, follow the [OpenRo
 
 No local GPU is required for these hosted inference examples. Provider access and availability depend on the student's account; the offline example works independently of that access.
 
+To see the tokens the model reads, run from the repository folder; the first run downloads about 17 MB of public tokenizer files, and no account is needed:
+
+```console
+cd token_lab
+uv sync
+uv run tokenize-text
+uv run tokenize-chat
+```
+
+`tokenize-text` shows the tokens of the prompt alone, `tokenize-chat` the tokens the model actually reads after the chat template; each is one short file.
+
 ## Debug in VS Code
 
-Open this repository folder or `llm_inference` itself in VS Code. Both have configurations for **LLM: Inspect HTTP (offline)**, **LLM: NVIDIA inference (live)**, **LLM: NVIDIA inference via OpenAI SDK (live)**, **LLM: OpenRouter inference (live)**, **LLM: OpenRouter inference via OpenAI SDK (live)** and **LLM: Attach to uv/debugpy (5678)**.
+Open the course workspace: **File > Open Workspace from File**, then select `engineering_agentic_ai_systems.code-workspace` in the repository folder. If you open the repository folder with **File > Open Folder** instead, VS Code offers to open the workspace in a notification; choose **Open Workspace**. The **Explorer** then shows three folders: **repository** (this README and AGENTS.md), **llm_inference** and **token_lab**. Each example project uses its own Python environment, `uv sync` task and debug configurations, from its own `.vscode` folder:
 
-Select the **Run and Debug** view, choose a configuration and use **Start Debugging**. The launch configurations run `uv sync` in the example project before starting its Python interpreter. See the [debugging guide](llm_inference/debugging.md) for the full procedure, platform differences and breakpoint exercises.
+- **llm_inference:** **LLM: Inspect HTTP (offline)**, **LLM: NVIDIA inference (live)**, **LLM: NVIDIA inference via OpenAI SDK (live)**, **LLM: OpenRouter inference (live)**, **LLM: OpenRouter inference via OpenAI SDK (live)** and **LLM: Attach to uv/debugpy (5678)**.
+- **token_lab:** **Tokens: Tokenize text (local)** and **Tokens: Tokenize chat (local)**.
+
+Select the **Run and Debug** view, choose a configuration and use **Start Debugging**; the list names the project after each configuration. The launch configurations run `uv sync` in the example project before starting its Python interpreter. You can also open a single project folder, such as `llm_inference`, with **File > Open Folder**; its configurations are the same. See the [debugging guide](llm_inference/debugging.md) for the full procedure, platform differences and breakpoint exercises.
 
 ## Repository structure
 
@@ -55,9 +75,10 @@ Select the **Run and Debug** view, choose a configuration and use **Start Debugg
 engineering_agentic_ai_systems_hs_aalen/
     README.md
     AGENTS.md
+    engineering_agentic_ai_systems.code-workspace   VS Code workspace: all projects
     .gitignore
     .gitattributes
-    .vscode/                     launch configurations for the repository root
+    .vscode/                     extension recommendations
     llm_inference/
         pyproject.toml
         uv.lock
@@ -70,8 +91,17 @@ engineering_agentic_ai_systems_hs_aalen/
         nvidia_walkthrough.md
         openrouter_walkthrough.md
         debugging.md
+    token_lab/
+        pyproject.toml
+        uv.lock
+        .python-version
+        .vscode/                 launch configurations for this project alone
+        src/eaas_token_lab/
+        tests/
+        README.md
+        what_you_can_access.md
 ```
 
-Each example owns its Python environment and dependencies. There is no root Python project; run uv commands from `llm_inference` for the current example. Additional examples can be added as the course develops.
+Each example owns its Python environment and dependencies. There is no root Python project; run uv commands from the example's folder, `llm_inference` or `token_lab`. Additional examples can be added as the course develops.
 
 This repository contains the shareable examples. Lecture slides and other course-planning materials are maintained separately.

@@ -1,0 +1,21 @@
+# Local Python environment and caches.
+.venv/
+.uv-cache/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+dist/
+build/
+*.egg-info/
+
+# Personal credentials. This project needs none, but never share them.
+.env
+.env.*
+
+# Public tokenizer files downloaded from Hugging Face; re-downloaded on demand.
+downloads/
+
+# Local experiment outputs.
+outputs/
