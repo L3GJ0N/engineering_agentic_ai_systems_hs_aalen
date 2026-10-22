@@ -14,13 +14,15 @@ You write Python. The starter's page is written in TypeScript and already runs. 
 
 The starter is a public template repository: [L3GJ0N/eaas_token_viewer_starter](https://github.com/L3GJ0N/eaas_token_viewer_starter). It runs end to end from the first day: a fake controller answers every command with made-up data. Its licence, MIT-0, lets you use and change its code without conditions.
 
-Every member needs a GitHub account. You also need four tools, which section 1 of the starter's README lists: Git, uv, Node.js 24 LTS or newer, and VS Code.
+Every member needs a GitHub account and four tools, which [section 1 of the starter's README](https://github.com/L3GJ0N/eaas_token_viewer_starter/blob/main/README.md#1-run-everything) lists with their installers: Git, uv, Node.js 24 LTS or newer, and VS Code 1.112 or newer. Install and check them before the session: `git --version`, `uv --version`, `node --version`, and **Help > About** in VS Code (on macOS, **Code > About Visual Studio Code**). Stuck with the setup? The starter's [SETUP_PROMPT.md](https://github.com/L3GJ0N/eaas_token_viewer_starter/blob/main/SETUP_PROMPT.md) is a prompt for a coding agent that walks you through it without changing any code.
 
 1. **Create your group's repository.** One member opens the starter's page, clicks **Use this template**, then **Create a new repository**, chooses their account as **Owner**, a name, and **Private** or **Public**, and clicks **Create repository from template**. That member then adds the others: in the new repository's **Settings**, **Collaborators** in the **Access** section, then **Add people**. Each of them accepts the invitation GitHub sends by e-mail. The starter's [GUIDE.md](https://github.com/L3GJ0N/eaas_token_viewer_starter/blob/main/GUIDE.md#your-groups-repository) has the details.
-2. **Clone it.** In VS Code, select **View > Command Palette**, run **Git: Clone**, choose **Clone from GitHub**, sign in when VS Code asks, and pick your group's repository. In a terminal, `git clone` with the address under **Code** on the repository's page works too; for a private repository, GitHub does not accept your account password there. Git for Windows opens a sign-in window; on macOS, Linux and in WSL, sign in once with `gh auth login` first, or clone through VS Code as above.
+2. **Clone it.** In VS Code, select **View > Command Palette**, run **Git: Clone**, choose **Clone from GitHub**, sign in when VS Code asks, and pick your group's repository. In a terminal, `git clone` with the address under **Code** on the repository's page works too; for a private repository, GitHub does not accept your account password there. Git for Windows opens a sign-in window; on macOS, Linux and in WSL, clone through VS Code as above, or run `git clone` in VS Code's own terminal, where VS Code handles the sign-in.
 
-   On Windows, clone into a short folder outside OneDrive, such as `C:\Users\<name>\repos`: a deep path breaks some tools. In WSL, work inside WSL as on Linux: clone into the WSL file system and open the clone in a VS Code WSL window.
-3. **Open the workspace, not the folder.** Select **File > Open Workspace from File** and choose `token_viewer.code-workspace` in the clone. Only the workspace gives VS Code the settings and debug configurations of both parts, and keeps editor AI suggestions off. Install the extensions it recommends: Python, Python Debugger and Ruff.
+   On Windows, clone into a short folder outside OneDrive, such as `C:\Users\<name>\repos`: a deep path breaks some tools. In WSL, first connect VS Code to WSL: install the WSL extension, click the remote indicator at the bottom left and choose **Connect to WSL**. In that window, install uv and Node.js as on Linux, and do steps 2 to 6 there: the clone then lands in the WSL file system.
+
+   Before your first commit, tell Git who you are: `git config --global user.name "Your Name"`, and `git config --global user.email` with your address. In a public repository, that address is public with every commit; GitHub's **Settings > Emails** offers a noreply address instead.
+3. **Open the workspace, not the folder.** Select **File > Open Workspace from File** and choose `token_viewer.code-workspace` in the clone. Only the workspace gives VS Code the settings and debug configurations of both parts, and keeps editor AI suggestions off. When VS Code asks whether you trust the authors, choose **Yes, I trust the authors**: in Restricted Mode, debugging and tasks are switched off. Install the extensions it recommends: Python, Python Debugger and Ruff.
 4. **Start the back end.** Select **Terminal > New Terminal**. VS Code asks for a folder: choose **repository**. Then run:
 
    ```console
@@ -37,14 +39,14 @@ Every member needs a GitHub account. You also need four tools, which section 1 o
    npm run dev
    ```
 
-   Open <http://localhost:5173>. The page shows the fake controller's made-up tokens.
+   Open <http://localhost:5173>. The page shows the fake controller's made-up tokens; the starter's [GUIDE.md](https://github.com/L3GJ0N/eaas_token_viewer_starter/blob/main/GUIDE.md#try-the-starter) says what to try first. On Windows, if PowerShell refuses `npm` because running scripts is disabled, type `npm.cmd` instead, or see the starter README's troubleshooting table.
 6. **Debug both processes.** The debugger starts a back end of its own, so first stop the one from step 4: close its terminal with **Kill Terminal**, or press Ctrl+C in it (Control, also on macOS). Keep `npm run dev` running: no debug configuration starts it. Then select the **Run and Debug** view, choose **Full stack: back end + browser** and click **Start Debugging**.
 
-The starter's [README](https://github.com/L3GJ0N/eaas_token_viewer_starter/blob/main/README.md) has the details, the checks and a troubleshooting table. Its [GUIDE.md](https://github.com/L3GJ0N/eaas_token_viewer_starter/blob/main/GUIDE.md) says what the starter provides, what is yours, and where the first breakpoints go.
+The starter's [README](https://github.com/L3GJ0N/eaas_token_viewer_starter/blob/main/README.md) has the details, the checks and a troubleshooting table. Its [GUIDE.md](https://github.com/L3GJ0N/eaas_token_viewer_starter/blob/main/GUIDE.md) says what the starter provides, what is yours, what to try first, and where the first breakpoints go.
 
 ## What the course repository gives you
 
-- **A first look.** [token_lab](../../token_lab/README.md) shows the first steps for the course model, Nemotron 3.5 Lightning. In `token_lab`, after `uv sync`, `uv run tokenize-text` shows the tokens of a text alone, and `uv run tokenize-chat` the tokens the model reads after the chat template.
+- **A first look.** Update your copy of the course repository first, with `git pull` or a new download: `token_lab` came after the first lecture. [token_lab](../../token_lab/README.md) shows the first steps for the course model, Nemotron 3.5 Lightning. In `token_lab`, after `uv sync`, `uv run tokenize-text` shows the tokens of a text alone, and `uv run tokenize-chat` the tokens the model reads after the chat template.
 - **The course request.** It is the request the NVIDIA examples in [llm_inference](../../llm_inference/README.md) send: one user message, "Explain tokenization in one sentence.", to `nvidia/nemotron-3.5-lightning-30b-a3b` on NVIDIA Build. [samples/course_messages.json](samples/course_messages.json) holds its messages as JSON.
 - **How this repository works.** `llm_inference` and `token_lab` are the examples: uv, a `src` layout, strict typing, Ruff, offline tests and pinned revisions. The starter's Python side already uses uv, Ruff, mypy and pytest. You are encouraged to work the same way.
 
@@ -57,7 +59,7 @@ Each step ends with something that runs, so your group can stop at any point and
 - Load a model's tokenizer and chat template from its repository on Hugging Face, at a pinned revision. After the first download, everything works offline.
 - Turn the messages into the text the chat template writes, and that text into tokens. Tokenize the text alone, without the chat template, as well.
 - A terminal view on your own controller and model shows every token with its index, ID, vocabulary entry and decoded text, marks the special tokens, and gives the count.
-- For the course request, Nemotron 3.5 Lightning gives the known 24 tokens: those that `uv run tokenize-chat` prints in `token_lab`.
+- For the course request, Nemotron 3.5 Lightning gives the known 24 tokens: the same IDs, in the same order, as `uv run tokenize-chat` prints in `token_lab`.
 
 ### 2. The page
 
