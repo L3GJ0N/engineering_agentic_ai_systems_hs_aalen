@@ -20,6 +20,10 @@ Python teaching examples for the master's course **Engineering Agentic AI System
 - How to find a model's tokenizer on Hugging Face.
 - A guide to what a hosted API lets you see of a model and how to find out, with exercises: [what_you_can_access.md](token_lab/what_you_can_access.md).
 
+## Exercises
+
+- [Token viewer](exercises/token_viewer/README.md): a group exercise in class. Each group builds a token viewer for chat requests, in Python, starting from its own copy of a template repository. The task sheet says what to deliver and how the presentation works.
+
 ## Start here
 
 Get the repository: on its [GitHub page](https://github.com/L3GJ0N/engineering_agentic_ai_systems_hs_aalen), select **Code → Download ZIP** and extract the archive, or clone it with Git:
@@ -100,8 +104,13 @@ engineering_agentic_ai_systems_hs_aalen/
         tests/
         README.md
         what_you_can_access.md
+    exercises/
+        token_viewer/
+            README.md            the task sheet
+            target_page.png      the picture on the task sheet
+            samples/             the course request's messages as JSON
 ```
 
-Each example owns its Python environment and dependencies. There is no root Python project; run uv commands from the example's folder, `llm_inference` or `token_lab`. Additional examples can be added as the course develops.
+Each example owns its Python environment and dependencies. There is no root Python project; run uv commands from the example's folder, `llm_inference` or `token_lab`. An exercise's folder holds its task sheet and samples; the code a group starts from is a template repository of its own. Additional examples can be added as the course develops.
 
 This repository contains the shareable examples. Lecture slides and other course-planning materials are maintained separately.
