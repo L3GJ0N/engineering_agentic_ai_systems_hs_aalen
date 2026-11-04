@@ -1,0 +1,53 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Attention: Model weights (local)",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "eaas_attention_lab.model_weights",
+            "python": "${workspaceFolder}/.venv/bin/python",
+            "windows": {
+                "python": "${workspaceFolder}/.venv/Scripts/python.exe"
+            },
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "envFile": "",
+            "preLaunchTask": "uv: sync",
+            "stopOnEntry": true,
+            "justMyCode": true
+        },
+        {
+            "name": "Attention: One head (local)",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "eaas_attention_lab.one_head",
+            "python": "${workspaceFolder}/.venv/bin/python",
+            "windows": {
+                "python": "${workspaceFolder}/.venv/Scripts/python.exe"
+            },
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "envFile": "",
+            "preLaunchTask": "uv: sync",
+            "stopOnEntry": true,
+            "justMyCode": true
+        },
+        {
+            "name": "Attention: Sink (local)",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "eaas_attention_lab.attention_sink",
+            "python": "${workspaceFolder}/.venv/bin/python",
+            "windows": {
+                "python": "${workspaceFolder}/.venv/Scripts/python.exe"
+            },
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "envFile": "",
+            "preLaunchTask": "uv: sync",
+            "stopOnEntry": true,
+            "justMyCode": true
+        }
+    ]
+}
