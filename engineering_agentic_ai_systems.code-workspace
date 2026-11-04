@@ -5,14 +5,16 @@
     "folders": [
         { "name": "repository", "path": "." },
         { "name": "llm_inference", "path": "llm_inference" },
-        { "name": "token_lab", "path": "token_lab" }
+        { "name": "token_lab", "path": "token_lab" },
+        { "name": "attention_lab", "path": "attention_lab" }
     ],
     "settings": {
         // The projects appear as their own folders above; hide them inside
         // "repository" so that no file is shown twice.
         "files.exclude": {
             "llm_inference": true,
-            "token_lab": true
+            "token_lab": true,
+            "attention_lab": true
         }
     },
     "extensions": {

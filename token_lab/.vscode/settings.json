@@ -1,3 +1,7 @@
 {
-    "python.defaultInterpreterPath": "${workspaceFolder}/.venv"
+    "python.defaultInterpreterPath": "${workspaceFolder}/.venv",
+    // uv run picks this project's environment by itself, so new terminals
+    // need none activated. An activated environment of another project would
+    // only make uv print a warning.
+    "python.terminal.activateEnvironment": false
 }
