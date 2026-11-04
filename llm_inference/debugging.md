@@ -221,6 +221,7 @@ The launch route is `uv sync -> .venv -> VS Code/debugpy -> Python module -> mai
 
 | Observation | Check |
 |---|---|
+| uv warns `VIRTUAL_ENV=... does not match the project environment path ... and will be ignored` | The terminal has another project's environment activated, for example after opening the repository folder instead of the workspace. The warning is harmless: uv uses this project's environment. Run `deactivate`, or open a new terminal in `llm_inference`. Do not add `--active`: it would install this project's packages into the other environment. |
 | The supplied configurations are missing, or VS Code asks to create `launch.json` | Open the course workspace, `engineering_agentic_ai_systems.code-workspace` in the repository folder, or `llm_inference` itself; the repository folder opened on its own has no debug configurations. Close the debugger-selection popup and try **View > Command Palette > Developer: Reload Window** if these files have just been added. |
 | Every session pauses on line 1 | That is `stopOnEntry`; click **Continue**. |
 | VS Code reports that the pre-launch task terminated with an exit code | `uv sync` failed. Choose **Abort**, read the task's terminal output and run `uv sync` in the project folder. |

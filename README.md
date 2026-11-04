@@ -82,15 +82,28 @@ uv run attention-sink
 
 Each command answers one question with GPT-2 small's own numbers, in the terminal and as figures in `attention_lab/outputs/`.
 
+## Several projects, one VS Code workspace
+
+The repository holds three independent uv projects: `llm_inference`, `token_lab` and `attention_lab`. Each has its own `pyproject.toml` and lockfile, its own Python environment in its own `.venv` folder, and its own VS Code settings and debug configurations in its own `.vscode` folder. They share nothing: `uv sync` in `token_lab` installs only what `token_lab` needs. There is no Python project at the repository's root, so run uv commands inside a project's folder, as in [Start here](#start-here). `uv run` always uses the environment of the project it runs in; you never need to activate one.
+
+The file `engineering_agentic_ai_systems.code-workspace` in the repository folder ties the projects together for VS Code. Open it, not the folder:
+
+1. Select **File > Open Workspace from File** and choose `engineering_agentic_ai_systems.code-workspace`. If you opened the repository folder with **File > Open Folder**, VS Code may offer the workspace in a notification; choose **Open Workspace**.
+2. Check the **Explorer**: it shows four folders, **repository** (this README and AGENTS.md), **llm_inference**, **token_lab** and **attention_lab**. A single folder tree means that the window shows the folder, not the workspace.
+
+Only the workspace gives each project its own Python environment in the editor and lists the debug configurations of every project. In a window opened on the repository folder, the editor checks all code against one environment and may mark imports as missing, **Run and Debug** offers no configurations, and **Terminal > New Terminal** starts in the repository folder without asking for a project. Opening one project folder alone, such as `attention_lab`, works as well: its settings and configurations come with it.
+
+If uv prints `warning: VIRTUAL_ENV=... does not match the project environment path ... and will be ignored`, the terminal has another project's environment activated. The warning is harmless: uv uses the right environment anyway. Run `deactivate`, or open a new terminal in the project's folder. Do not add `--active`, as the warning suggests: that would install this project's packages into the other project's environment. The repository's VS Code settings stop VS Code from activating environments in new terminals, so the warning appears only after an environment was activated by hand or by your own VS Code settings.
+
 ## Debug in VS Code
 
-Open the course workspace: **File > Open Workspace from File**, then select `engineering_agentic_ai_systems.code-workspace` in the repository folder. If you open the repository folder with **File > Open Folder** instead, VS Code offers to open the workspace in a notification; choose **Open Workspace**. The **Explorer** then shows four folders: **repository** (this README and AGENTS.md), **llm_inference**, **token_lab** and **attention_lab**. Each example project uses its own Python environment, `uv sync` task and debug configurations, from its own `.vscode` folder:
+In the course workspace, each example project uses its own Python environment, `uv sync` task and debug configurations, from its own `.vscode` folder:
 
 - **llm_inference:** **LLM: Inspect HTTP (offline)**, **LLM: NVIDIA inference (live)**, **LLM: NVIDIA inference via OpenAI SDK (live)**, **LLM: OpenRouter inference (live)**, **LLM: OpenRouter inference via OpenAI SDK (live)** and **LLM: Attach to uv/debugpy (5678)**.
 - **token_lab:** **Tokens: Tokenize text (local)** and **Tokens: Tokenize chat (local)**.
 - **attention_lab:** **Attention: Model weights (local)**, **Attention: One head (local)** and **Attention: Sink (local)**.
 
-Select the **Run and Debug** view, choose a configuration and use **Start Debugging**; the list names the project after each configuration. The launch configurations run `uv sync` in the example project before starting its Python interpreter. You can also open a single project folder, such as `llm_inference`, with **File > Open Folder**; its configurations are the same. See the [debugging guide](llm_inference/debugging.md) for the full procedure, platform differences and breakpoint exercises.
+Select the **Run and Debug** view, choose a configuration and use **Start Debugging**; the list names the project after each configuration. The launch configurations run `uv sync` in the example project before starting its Python interpreter. See the [debugging guide](llm_inference/debugging.md) for the full procedure, platform differences and breakpoint exercises.
 
 ## Repository structure
 
@@ -101,7 +114,7 @@ engineering_agentic_ai_systems_hs_aalen/
     engineering_agentic_ai_systems.code-workspace   VS Code workspace: all projects
     .gitignore
     .gitattributes
-    .vscode/                     extension recommendations
+    .vscode/                     extension recommendations; no environments in terminals
     llm_inference/
         pyproject.toml
         uv.lock

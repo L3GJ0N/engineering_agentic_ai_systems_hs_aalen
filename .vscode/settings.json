@@ -1,0 +1,7 @@
+{
+    // The repository folder has no Python project of its own. Each project
+    // folder brings its own environment, and uv run picks it by itself, so
+    // new terminals need none activated: an activated environment of one
+    // project would only make uv print a warning in another.
+    "python.terminal.activateEnvironment": false
+}
