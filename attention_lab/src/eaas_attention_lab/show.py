@@ -1,4 +1,4 @@
-"""Show matrices: as tables in the terminal and as heatmaps in PNG files.
+"""Show results: matrices as tables in the terminal, figures as PNG files.
 
 All figures follow the same rules, so that two figures can be compared:
   - In a matrix of scores or weights, row i belongs to the token that reads
@@ -17,7 +17,7 @@ settings, copy a figure first.
 
 import io
 import sys
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from pathlib import Path
 
 import numpy as np
@@ -39,6 +39,7 @@ INK = "#0b0b0b"  # titles and values
 INK_SECONDARY = "#52514e"  # labels
 INK_MUTED = "#898781"  # ticks and notes
 HIDDEN = "#c3c2b7"  # cells the causal mask hides
+GRID = "#e1e0d9"  # gridlines
 # Colours for up to three data series, always in this order. They stay
 # distinguishable for the common kinds of colour blindness.
 SERIES: tuple[str, ...] = ("#2a78d6", "#eb6834", "#1baf7a")
@@ -211,6 +212,126 @@ def colour_bar(
     bar.set_label(label, color=INK_SECONDARY)
     bar.outline.set_visible(False)
     bar.ax.tick_params(length=0)
+
+
+# --- The figures the commands draw -----------------------------------------------
+
+
+def row_notes(ax: Axes, notes: Sequence[str]) -> None:
+    """Write a note beside each row of a heatmap, on its right-hand side."""
+    side = ax.secondary_yaxis("right")
+    side.set_yticks(range(len(notes)), list(notes))
+    side.tick_params(length=0)
+    side.spines["right"].set_visible(False)
+
+
+def scores_and_weights(
+    scores: Array, weights: Array, late: Array, labels: Sequence[str], title: str
+) -> Figure:
+    """One head, three panels: S, A, and A with the mask after the softmax.
+
+    The scores show every cell, with a line where the future begins. The
+    third panel writes each row's sum beside the row.
+    """
+    t = len(labels)
+    fig = figure(15, 5.2)
+    left, middle, right = fig.subplots(1, 3)
+    image = heatmap(left, scores, labels, signed=True)
+    outline_future(left, t)
+    left.set_title("S: scores. Right of the line: the future")
+    colour_bar(fig, image, left, "score")
+    image = heatmap(middle, weights, labels, hide_future=True)
+    middle.set_title("A = softmax(S + mask): rows sum to 1")
+    heatmap(right, late, labels, hide_future=True)
+    row_notes(right, [f"sum {value:.2f}" for value in late.sum(axis=-1)])
+    right.set_title("Mask after the softmax: earlier rows lose weight")
+    for ax in (middle, right):
+        ax.set_ylabel("")  # the same as on the left
+    colour_bar(fig, image, [middle, right], "attention weight")
+    fig.suptitle(title, x=0.01, ha="left", fontsize=12)
+    return fig
+
+
+def head_grid(weights: Array, labels: Sequence[str], title: str) -> Figure:
+    """The weights A of every head of one layer, [heads, T, T], four per row."""
+    heads = len(weights)
+    rows = (heads + 3) // 4
+    fig = figure(13, 10 * rows / 3)
+    axes = list(fig.subplots(rows, 4, squeeze=False).flat)
+    images = [
+        heatmap(ax, weights[head], labels, hide_future=True, numbers=False)
+        for head, ax in enumerate(axes[:heads])
+    ]
+    for head, ax in enumerate(axes[:heads]):
+        ax.set_title(f"head {head}", fontsize=10)
+        if head % 4:
+            ax.set_ylabel("")  # only the first column names the axes
+        if head < heads - 4:
+            ax.set_xlabel("")  # only the last row does
+    for ax in axes[heads:]:
+        ax.set_visible(False)
+    colour_bar(fig, images[0], axes, "attention weight")
+    fig.suptitle(title, x=0.01, ha="left", fontsize=12)
+    return fig
+
+
+def layer_bars(series: Mapping[str, Array], title: str, ylabel: str) -> Figure:
+    """One group of bars per layer, one bar per series, for values from 0 to 1.
+
+    Each series holds one value per layer, such as a share averaged over the
+    layer's heads. The series get the colours of SERIES, in order.
+    """
+    fig = figure(9, 3.8)
+    ax = fig.subplots()
+    width = 0.76 / len(series)  # of one bar, so that a group fills 0.76
+    for n, (label, values) in enumerate(series.items()):
+        layers = np.arange(len(values))
+        offset = (n - (len(series) - 1) / 2) * width
+        ax.bar(layers + offset, values, width - 0.04, color=SERIES[n], label=label)
+        ax.set_xticks(layers)
+    ax.set_xlabel("layer")
+    ax.set_ylim(0, 1)
+    ax.set_ylabel(ylabel)
+    ax.grid(axis="y", color=GRID, linewidth=0.6)
+    ax.set_axisbelow(True)
+    ax.legend(loc="upper right")
+    ax.set_title(title)
+    return fig
+
+
+def labelled_bars(
+    values: Mapping[str, float],
+    notes: Sequence[str],
+    title: str,
+    xlabel: str,
+    unit: tuple[float, str] = (1.0, ""),
+) -> Figure:
+    """One horizontal bar per entry, from the top in the given order.
+
+    notes holds the text written at the end of each bar. unit scales the
+    numbers on the axis: (1e6, " M") writes 10,000,000 as 10 M.
+    """
+    fig = figure(8.5, 0.2 + 0.6 * len(values))
+    ax = fig.subplots()
+    names, sizes = list(values)[::-1], list(values.values())[::-1]
+    ax.barh(names, sizes, color=SERIES[0], height=0.6)
+    for y, (size, note) in enumerate(zip(sizes, list(notes)[::-1], strict=True)):
+        ax.annotate(
+            note,
+            (size, y),
+            xytext=(4, 0),
+            textcoords="offset points",
+            va="center",
+            fontsize=9,
+            color=INK_SECONDARY,
+        )
+    scale, name = unit
+    ax.set_xlabel(xlabel)
+    ax.xaxis.set_major_formatter(lambda value, _: f"{value / scale:g}{name}")
+    ax.margins(x=0.22)
+    ax.tick_params(axis="y", length=0)
+    ax.set_title(title)
+    return fig
 
 
 def save(fig: Figure, name: str) -> Path:

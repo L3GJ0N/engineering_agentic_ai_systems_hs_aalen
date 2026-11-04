@@ -26,9 +26,9 @@ uv run one-head
 uv run attention-sink
 ```
 
-1. [model_weights.py](src/eaas_attention_lab/model_weights.py): **where are W_Q, W_K, W_V and W_O?** The model file holds 160 named arrays. W_Q, W_K and W_V of a block sit side by side in one 768 × 2304 matrix, and the four matrices of a block hold exactly 4d² = 2,359,296 weights. The file also holds what diagrams rarely show: biases, LayerNorm, the feed-forward networks with 46 % of all weights, and a stored causal mask. One thing is missing: the output layer has no matrix of its own.
-2. [one_head.py](src/eaas_attention_lab/one_head.py): **one head by hand.** Read the docstring of [gpt2.py](src/eaas_attention_lab/gpt2.py) first: it explains LayerNorm and the residual stream, which attention diagrams usually leave out. The queries, keys and values of head 4 in layer 5 for "the cat sat on it", the scores S, the mask, the weights A and the head's result, each step checked against the whole model. S is not symmetric; dividing by √64 keeps the order within each row but changes the weights; masking after the softmax leaves every row but the last summing to less than 1.
-3. [attention_sink.py](src/eaas_attention_lab/attention_sink.py): **why most heads look at the first token.** In 114 of the 144 heads, " it" puts its largest weight on the first token, and in about as many when a word of the sentence comes first. The first token's value vectors are short, so a head gets little from there: it is a place to put weight when there is nothing to read. The script ends with why this matters for reading attention maps, and for servers with long conversations.
+1. [model_weights.py](src/eaas_attention_lab/commands/model_weights.py): **where are W_Q, W_K, W_V and W_O?** The model file holds 160 named arrays. W_Q, W_K and W_V of a block sit side by side in one 768 × 2304 matrix, and the four matrices of a block hold exactly 4d² = 2,359,296 weights. The file also holds what diagrams rarely show: biases, LayerNorm, the feed-forward networks with 46 % of all weights, and a stored causal mask. One thing is missing: the output layer has no matrix of its own.
+2. [one_head.py](src/eaas_attention_lab/commands/one_head.py): **one head by hand.** Read the docstring of [gpt2.py](src/eaas_attention_lab/gpt2.py) first: it explains LayerNorm and the residual stream, which attention diagrams usually leave out. The queries, keys and values of head 4 in layer 5 for "the cat sat on it", the scores S, the mask, the weights A and the head's result, each step checked against the whole model. S is not symmetric; dividing by √64 keeps the order within each row but changes the weights; masking after the softmax leaves every row but the last summing to less than 1.
+3. [attention_sink.py](src/eaas_attention_lab/commands/attention_sink.py): **why most heads look at the first token.** In 114 of the 144 heads, " it" puts its largest weight on the first token, and in about as many when a word of the sentence comes first. The first token's value vectors are short, so a head gets little from there: it is a place to put weight when there is nothing to read. The script ends with why this matters for reading attention maps, and for servers with long conversations.
 
 To try another text, layer or head, change `TEXT`, `LAYER` or `HEAD` at the top of a script, save, and run it again.
 
@@ -38,6 +38,21 @@ To try another text, layer or head, change `TEXT`, `LAYER` or `HEAD` at the top 
 - In every matrix of scores or weights, row i belongs to the token that reads, its query, and column j to the token that is read, its key. Weights are blue on a fixed scale from 0 to 1, so a colour means the same weight in every figure. Scores are red below 0, light grey near 0 and blue above. Darker grey cells are hidden by the mask. In the figure of `one_head.py`, the cells also show their values for texts of up to 8 tokens, and its terminal tables of S and A hold them for any length; the 12 small panels of `attention_sink.py` show colours only.
 - Layers and heads count from 0, as Python does: layer 5 is the sixth block. Vocabulary entries are shown as in [token_lab](../token_lab/README.md): `Ġ` stands for a space.
 - GPT-2 adds no start token to a text. The scripts put its only special token, `<|endoftext|>`, in front; `attention_sink.py` shows why the first token matters.
+
+## How the code is organized
+
+```text
+src/eaas_attention_lab/
+    gpt2.py                 library: GPT-2's forward pass
+    model_files.py          library: download and read the model's files
+    show.py                 library: tables and figures
+    commands/               what you run, one question per file
+        model_weights.py    uv run model-weights
+        one_head.py         uv run one-head
+        attention_sink.py   uv run attention-sink
+```
+
+A command holds its settings at the top and one function, `main()`, that answers its question in numbered steps. The measurements that answer the question are written out there, so that you can read and change them. Everything a command reuses, the model, its files and the figures, comes from the library.
 
 ## The model in NumPy
 

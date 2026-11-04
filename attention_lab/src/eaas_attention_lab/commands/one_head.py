@@ -18,7 +18,7 @@ import math
 import numpy as np
 
 from eaas_attention_lab import model_files, show
-from eaas_attention_lab.gpt2 import Array, causal_mask, forward, layer_norm, softmax
+from eaas_attention_lab.gpt2 import causal_mask, forward, layer_norm, softmax
 
 # --- The choices -----------------------------------------------------------------
 
@@ -65,22 +65,19 @@ def main() -> None:
     # added (with LAYER = 0, H is H1). Two details that diagrams leave out:
     # attention reads H after LayerNorm, which gives each token's vector mean
     # 0 and variance 1 and then applies learned gains and biases, and each
-    # product gets a bias. W_Q starts at column 0 of c_attn, W_K at column d
-    # and W_V at column 2d; this head uses 64 columns of each.
+    # product gets a bias. GPT-2 stores W_Q, W_K and W_V side by side in one
+    # matrix, c_attn; we cut it into the three, and take this head's 64
+    # columns of each.
     prefix = f"h.{LAYER}."
     x = layer_norm(
         layer.h_in, w[prefix + "ln_1.weight"], w[prefix + "ln_1.bias"], config.eps
     )
-    c_attn, b_attn = w[prefix + "attn.c_attn.weight"], w[prefix + "attn.c_attn.bias"]
-
-    def columns(part: int) -> slice:
-        """This head's columns of W_Q (part 0), W_K (part 1) or W_V (part 2)."""
-        start = part * d + HEAD * d_h
-        return slice(start, start + d_h)
-
-    q = x @ c_attn[:, columns(0)] + b_attn[columns(0)]  # [T, d_h]
-    k = x @ c_attn[:, columns(1)] + b_attn[columns(1)]
-    v = x @ c_attn[:, columns(2)] + b_attn[columns(2)]
+    w_q, w_k, w_v = np.split(w[prefix + "attn.c_attn.weight"], 3, axis=1)  # [d, d]
+    b_q, b_k, b_v = np.split(w[prefix + "attn.c_attn.bias"], 3)  # [d] each
+    head = slice(HEAD * d_h, (HEAD + 1) * d_h)  # this head's columns
+    q = x @ w_q[:, head] + b_q[head]  # [T, d_h]
+    k = x @ w_k[:, head] + b_k[head]
+    v = x @ w_v[:, head] + b_v[head]
     same = all(
         np.allclose(mine, model_value[HEAD], atol=1e-5)
         for mine, model_value in ((q, layer.q), (k, layer.k), (v, layer.v))
@@ -196,35 +193,11 @@ def main() -> None:
         f"x {d_h} = {d} numbers per token; W_O turns them into the {d} numbers "
         "that attention adds to the residual stream."
     )
-    plot(s, a, late, labels)
 
-
-def plot(s: Array, a: Array, late: Array, labels: list[str]) -> None:
-    """S with the future outlined, A, and A with the mask after the softmax."""
-    t = len(labels)
-    fig = show.figure(15, 5.2)
-    left, middle, right = fig.subplots(1, 3)
-    image = show.heatmap(left, s, labels, signed=True)
-    show.outline_future(left, t)
-    left.set_title("S: scores. Right of the line: the future")
-    show.colour_bar(fig, image, left, "score")
-    image = show.heatmap(middle, a, labels, hide_future=True)
-    middle.set_title("A = softmax(S + mask): rows sum to 1")
-    show.heatmap(right, late, labels, hide_future=True)
-    for ax in (middle, right):
-        ax.set_ylabel("")  # the same as on the left
-    # The rows' sums as labels on the right-hand side of the last panel.
-    sums = right.secondary_yaxis("right")
-    sums.set_yticks(range(t), [f"sum {value:.2f}" for value in late.sum(axis=-1)])
-    sums.tick_params(length=0)
-    sums.spines["right"].set_visible(False)
-    right.set_title("Mask after the softmax: earlier rows lose weight")
-    show.colour_bar(fig, image, [middle, right], "attention weight")
-    fig.suptitle(
-        f"GPT-2 small, layer {LAYER}, head {HEAD}, for {TEXT!r}",
-        x=0.01,
-        ha="left",
-        fontsize=12,
+    # The figure: S with the future outlined, A, and A with the mask after the
+    # softmax, each row's sum beside it.
+    fig = show.scores_and_weights(
+        s, a, late, labels, f"GPT-2 small, layer {LAYER}, head {HEAD}, for {TEXT!r}"
     )
     show.save(fig, "one_head")
 

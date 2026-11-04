@@ -163,33 +163,25 @@ def main() -> None:
     # Step 7: where the numbers are. The masks are no weights; we count them
     # separately, to check that the file holds nothing else.
     sizes = {name: int(np.prod(shape)) for name, shape in shapes.items()}
-
-    def total(*suffixes: str) -> int:
-        return sum(n for name, n in sizes.items() if name.endswith(suffixes))
-
     groups = {
         "token embeddings E": sizes["wte.weight"],
         "position embeddings E_pos": sizes["wpe.weight"],
-        "attention, 12 blocks": total(
-            "attn.c_attn.weight",
-            "attn.c_attn.bias",
-            "attn.c_proj.weight",
-            "attn.c_proj.bias",
+        "attention, 12 blocks": sum(
+            n
+            for name, n in sizes.items()
+            if ".attn.c_" in name  # c_attn, c_proj
         ),
-        "feed-forward networks, 12 blocks": total(
-            "mlp.c_fc.weight", "mlp.c_fc.bias", "mlp.c_proj.weight", "mlp.c_proj.bias"
+        "feed-forward networks, 12 blocks": sum(
+            n for name, n in sizes.items() if ".mlp." in name
         ),
-        "LayerNorms, 25": total(
-            "ln_1.weight",
-            "ln_1.bias",
-            "ln_2.weight",
-            "ln_2.bias",
-            "ln_f.weight",
-            "ln_f.bias",
+        "LayerNorms, 25": sum(
+            n
+            for name, n in sizes.items()
+            if "ln_" in name  # ln_1, ln_2, ln_f
         ),
     }
     weights = sum(groups.values())
-    mask_numbers = total(".attn.bias")  # the dot: not c_attn.bias
+    mask_numbers = sum(n for name, n in sizes.items() if name.endswith(".attn.bias"))
     print(f"\nStep 7: {weights:,} learned weights, the masks not counted:")
     for group, n in groups.items():
         print(f"  {group:<34} {n:>12,}  {n / weights:7.2%}")
@@ -202,31 +194,21 @@ def main() -> None:
         f"{4 * mask_numbers:,} of masks and {8 + header:,} of header make "
         f"{size:,} bytes, the size of the file: {size == path.stat().st_size}"
     )
-    plot(groups, weights)
 
-
-def plot(groups: dict[str, int], weights: int) -> None:
-    """One bar per group of weights, with its share written beside it."""
-    fig = show.figure(8.5, 3.2)
-    ax = fig.subplots()
-    names, counts = list(groups)[::-1], list(groups.values())[::-1]
-    ax.barh(names, counts, color=show.SERIES[0], height=0.6)
-    for y, n in enumerate(counts):
-        size = f"{n / 1e6:.1f} M" if n >= 1e6 else f"{n:,}"
-        ax.annotate(
-            f"{size} ({n / weights:.2%})",
-            (n, y),
-            xytext=(4, 0),
-            textcoords="offset points",
-            va="center",
-            fontsize=9,
-            color=show.INK_SECONDARY,
-        )
-    ax.set_xlabel("weights")
-    ax.xaxis.set_major_formatter(lambda value, _: f"{value / 1e6:g} M")
-    ax.margins(x=0.22)
-    ax.tick_params(axis="y", length=0)
-    ax.set_title(f"Where GPT-2 small's {weights / 1e6:.0f} million weights are")
+    # The figure: one bar per group, with its size and share.
+    notes = [
+        f"{n / 1e6:.1f} M ({n / weights:.2%})"
+        if n >= 1e6
+        else f"{n:,} ({n / weights:.2%})"
+        for n in groups.values()
+    ]
+    fig = show.labelled_bars(
+        groups,
+        notes,
+        f"Where GPT-2 small's {weights / 1e6:.0f} million weights are",
+        "weights",
+        unit=(1e6, " M"),
+    )
     show.save(fig, "model_weights")
 
 

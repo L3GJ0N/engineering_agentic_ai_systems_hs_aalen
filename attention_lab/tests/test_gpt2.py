@@ -63,6 +63,10 @@ def test_every_matrix_has_its_shape_and_stays_float32(
     assert layer.q.shape == (CONFIG.n_heads, t, CONFIG.d_h)
     assert layer.weights.shape == (CONFIG.n_heads, t, t)
     assert trace.logits.shape == (t, CONFIG.vocab_size)
+    # The stacked views put the layer first: attention[layer, head, i, j].
+    assert trace.attention.shape == (CONFIG.n_layers, CONFIG.n_heads, t, t)
+    np.testing.assert_array_equal(trace.attention[1, 2], trace.layers[1].weights[2])
+    assert trace.block_outputs.shape == (CONFIG.n_layers, t, CONFIG.d)
     # NumPy turns float32 into float64 when a NumPy float64 joins in; the
     # forward pass must stay in the weights' precision.
     assert layer.weights.dtype == np.float32

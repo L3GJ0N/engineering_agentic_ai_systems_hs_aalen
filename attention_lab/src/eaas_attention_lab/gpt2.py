@@ -82,6 +82,29 @@ class Trace:
     final: Array  # [T, d] the last block's output after the final LayerNorm
     logits: Array  # [T, V] one score per vocabulary entry, for the next token
 
+    # The same matrices for all layers at once, stacked along a new first axis:
+    # trace.attention[5, 4] is A of head 4 in layer 5.
+
+    @property
+    def attention(self) -> Array:
+        """[layers, heads, T, T]: the attention weights A of every head."""
+        return np.stack([layer.weights for layer in self.layers])
+
+    @property
+    def values(self) -> Array:
+        """[layers, heads, T, d_h]: the value vectors of every head."""
+        return np.stack([layer.v for layer in self.layers])
+
+    @property
+    def head_outputs(self) -> Array:
+        """[layers, heads, T, d_h]: what every head returns, A V."""
+        return np.stack([layer.head_outputs for layer in self.layers])
+
+    @property
+    def block_outputs(self) -> Array:
+        """[layers, T, d]: the residual stream after every block."""
+        return np.stack([layer.h_out for layer in self.layers])
+
 
 def layer_norm(x: Array, gain: Array, bias: Array, eps: float) -> Array:
     """Give each row mean 0 and variance 1, then apply the learned gain and bias."""

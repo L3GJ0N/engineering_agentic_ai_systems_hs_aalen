@@ -5,7 +5,7 @@
             "name": "Attention: Model weights (local)",
             "type": "debugpy",
             "request": "launch",
-            "module": "eaas_attention_lab.model_weights",
+            "module": "eaas_attention_lab.commands.model_weights",
             "python": "${workspaceFolder}/.venv/bin/python",
             "windows": {
                 "python": "${workspaceFolder}/.venv/Scripts/python.exe"
@@ -21,7 +21,7 @@
             "name": "Attention: One head (local)",
             "type": "debugpy",
             "request": "launch",
-            "module": "eaas_attention_lab.one_head",
+            "module": "eaas_attention_lab.commands.one_head",
             "python": "${workspaceFolder}/.venv/bin/python",
             "windows": {
                 "python": "${workspaceFolder}/.venv/Scripts/python.exe"
@@ -37,7 +37,7 @@
             "name": "Attention: Sink (local)",
             "type": "debugpy",
             "request": "launch",
-            "module": "eaas_attention_lab.attention_sink",
+            "module": "eaas_attention_lab.commands.attention_sink",
             "python": "${workspaceFolder}/.venv/bin/python",
             "windows": {
                 "python": "${workspaceFolder}/.venv/Scripts/python.exe"

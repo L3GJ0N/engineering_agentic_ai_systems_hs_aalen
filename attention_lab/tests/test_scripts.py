@@ -12,13 +12,8 @@ from pathlib import Path
 
 import pytest
 
-from eaas_attention_lab import (
-    attention_sink,
-    model_files,
-    model_weights,
-    one_head,
-    show,
-)
+from eaas_attention_lab import model_files, show
+from eaas_attention_lab.commands import attention_sink, model_weights, one_head
 
 FOLDER = model_files.FOLDER
 pytestmark = pytest.mark.skipif(

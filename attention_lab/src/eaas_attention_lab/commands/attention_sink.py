@@ -17,7 +17,7 @@ Run from the project root: uv run attention-sink
 import numpy as np
 
 from eaas_attention_lab import model_files, show
-from eaas_attention_lab.gpt2 import Array, Trace, forward
+from eaas_attention_lab.gpt2 import forward
 
 # --- The choices -----------------------------------------------------------------
 
@@ -38,50 +38,22 @@ READING: float = 0.2
 LAYER: int = 5
 
 
-def last_rows(trace: Trace) -> Array:
-    """[layers, heads, T]: the last token's attention weights in every head."""
-    return np.stack([layer.weights[:, -1, :] for layer in trace.layers])
-
-
-def on_first(trace: Trace) -> tuple[int, float]:
-    """Count the heads whose largest weight is on the first token; mean weight.
-
-    Both for the last token: in how many heads its largest weight is on the
-    first token, and the mean weight it puts there.
-    """
-    rows = last_rows(trace)
-    return int((rows.argmax(axis=-1) == 0).sum()), float(rows[..., 0].mean())
-
-
-def result_shares(trace: Trace) -> Array:
-    """[layers, heads]: the first token's share of what each head returns.
-
-    A head returns, for the last token, the sum of weight x value over all
-    tokens. The share is the length of the first token's part divided by the
-    sum of the lengths of all parts.
-    """
-    shares = []
-    for layer in trace.layers:
-        parts = layer.weights[:, -1, :, np.newaxis] * layer.v  # [heads, T, d_h]
-        lengths = np.linalg.norm(parts, axis=-1)  # [heads, T]
-        shares.append(lengths[:, 0] / lengths.sum(axis=-1))
-    return np.stack(shares)
-
-
 def main() -> None:
     """Measure where the weight goes, what it brings and what marks position 0."""
     show.utf8_output()
     model = model_files.load()
     heads = model.config.n_layers * model.config.n_heads
 
-    # Step 1: the last token of the sentence, " it", in all 144 heads.
+    # Step 1: the last token of the sentence, " it", in all 144 heads. Its row
+    # of A in every head of every layer: [layers, heads, T].
     ids = [model.end_of_text, *model.encode(TEXT)]
     trace = forward(ids, model.weights, model.config)
-    count, mean = on_first(trace)
+    last = trace.attention[:, :, -1, :]
+    count = int((last.argmax(axis=-1) == 0).sum())  # largest weight on token 0
     print(
         f"Step 1: <|endoftext|> + {TEXT!r}: in {count} of {heads} heads, "
         f"{model.entries(ids)[-1]} puts its largest weight on the first token, "
-        f"<|endoftext|>; on average {mean:.2f} of its weight."
+        f"<|endoftext|>; on average {last[..., 0].mean():.2f} of its weight."
     )
 
     # Step 2: change the first token. If the weight followed the word, it would
@@ -91,12 +63,15 @@ def main() -> None:
     print("  first token    heads with the largest weight there   mean weight there")
     texts = [TEXT, *(f"{word} {TEXT}" for word in FIRST_WORDS)]
     for other in (ids, *(model.encode(text) for text in texts)):
-        count, mean = on_first(forward(other, model.weights, model.config))
+        rows = forward(other, model.weights, model.config).attention[:, :, -1, :]
+        count = int((rows.argmax(axis=-1) == 0).sum())
         first = model.entries(other)[0]
-        print(f"  {first:<13}  {f'{count} of {heads} heads':<38}{mean:.2f}")
+        print(
+            f"  {first:<13}  {f'{count} of {heads} heads':<38}{rows[..., 0].mean():.2f}"
+        )
     repeated = model.encode(REPEATED)
     entries = model.entries(repeated)
-    rows = last_rows(forward(repeated, model.weights, model.config))
+    rows = forward(repeated, model.weights, model.config).attention[:, :, -1, :]
     later = entries.index(entries[0], 1)  # where the first token comes again
     print(
         f"  The same token twice, {REPEATED!r}: {entries[-1]} puts on average "
@@ -109,13 +84,14 @@ def main() -> None:
     # to mix the value vectors: each token adds weight x value to the head's
     # result. All lengths below are measured in one unit per head: the
     # average length of the other tokens' value vectors.
-    lengths = np.stack([np.linalg.norm(layer.v, axis=-1) for layer in trace.layers])
+    lengths = np.linalg.norm(trace.values, axis=-1)  # [layers, heads, T]
     unit = lengths[..., 1:].mean(axis=-1)  # [layers, heads]
-    weight_share = last_rows(trace)[..., 0]  # [layers, heads]
-    shares = result_shares(trace)
-    results = np.stack(  # [layers, heads]: the length of each head's result
-        [np.linalg.norm(layer.head_outputs[:, -1], axis=-1) for layer in trace.layers]
-    )
+    weight_share = last[..., 0]  # [layers, heads]
+    # The length of each token's part, weight x value: [layers, heads, T].
+    parts = np.linalg.norm(last[..., np.newaxis] * trace.values, axis=-1)
+    shares = parts[..., 0] / parts.sum(axis=-1)  # the first token's share
+    # The length of each head's result for the last token, in the same unit.
+    results = np.linalg.norm(trace.head_outputs[:, :, -1], axis=-1) / unit
     parked, reading = weight_share > PARKED, weight_share < READING
     print("\nStep 3: what does a head get from the first token?")
     print(
@@ -132,10 +108,10 @@ def main() -> None:
     print(
         "  So a head that parks its weight there returns little. In the "
         f"{parked.sum()} heads that put more than {PARKED} of the weight on the "
-        "first token, the result is on average "
-        f"{(results / unit)[parked].mean():.2f} times the average length of the "
-        f"other tokens' values; in the {reading.sum()} heads that put less than "
-        f"{READING} there, {(results / unit)[reading].mean():.2f} times."
+        f"first token, the result is on average {results[parked].mean():.2f} "
+        "times the average length of the other tokens' values; in the "
+        f"{reading.sum()} heads that put less than {READING} there, "
+        f"{results[reading].mean():.2f} times."
     )
     print(
         "  A head that finds nothing to read parks its weight on the first token "
@@ -157,11 +133,10 @@ def main() -> None:
         "    block  first token  other tokens  "
         "the first token's two numbers farthest from 0"
     )
-    for i, layer in enumerate(trace.layers):
-        length = np.linalg.norm(layer.h_out, axis=-1)
-        first = layer.h_out[0]
-        top = np.argsort(-np.abs(first))[:2]  # the two farthest from 0
-        largest = ", ".join(f"number {n}: {first[n]:,.0f}" for n in top)
+    for i, stream in enumerate(trace.block_outputs):  # stream: [T, d]
+        length = np.linalg.norm(stream, axis=-1)
+        top = np.argsort(-np.abs(stream[0]))[:2]  # the two farthest from 0
+        largest = ", ".join(f"number {n}: {stream[0, n]:,.0f}" for n in top)
         print(
             f"    {i:>5}  {length[0]:>11,.0f}  {length[1:].min():>5,.0f} to "
             f"{length[1:].max():<5,.0f}  {largest}"
@@ -183,71 +158,27 @@ def main() -> None:
         "token in GPT-2: they appear early, stay through the middle layers, shrink "
         "in the last ones and draw attention to their token: arXiv 2402.17762."
     )
-    plot_heads(trace, model.entries(ids))
-    plot_layers(weight_share, shares)
 
-
-def plot_heads(trace: Trace, labels: list[str]) -> None:
-    """The weights A of all 12 heads of LAYER; grey cells are masked."""
-    fig = show.figure(13, 10)
-    axes = fig.subplots(3, 4)
-    image = None
-    for head, ax in enumerate(axes.flat):
-        image = show.heatmap(
-            ax,
-            trace.layers[LAYER].weights[head],
-            labels,
-            hide_future=True,
-            numbers=False,
-        )
-        ax.set_title(f"head {head}", fontsize=10)
-        if head % 4:
-            ax.set_ylabel("")
-        if head < 8:
-            ax.set_xlabel("")
-    if image is not None:
-        show.colour_bar(fig, image, list(axes.flat), "attention weight")
-    fig.suptitle(
+    # The figures: the 12 heads of LAYER, and per layer the first token's
+    # share of the weight next to its share of the result.
+    grid = show.head_grid(
+        trace.attention[LAYER],
+        model.entries(ids),
         f"GPT-2 small, layer {LAYER}: the attention weights A of its 12 heads",
-        x=0.01,
-        ha="left",
-        fontsize=12,
     )
-    show.save(fig, "attention_sink_heads")
-
-
-def plot_layers(weight_share: Array, shares: Array) -> None:
-    """Per layer: the first token's share of the weight and of the result."""
-    fig = show.figure(9, 3.8)
-    ax = fig.subplots()
-    layers = np.arange(len(weight_share))
-    width = 0.38
-    ax.bar(
-        layers - width / 2,
-        weight_share.mean(axis=-1),
-        width - 0.04,
-        color=show.SERIES[0],
-        label="share of the weight",
-    )
-    ax.bar(
-        layers + width / 2,
-        shares.mean(axis=-1),
-        width - 0.04,
-        color=show.SERIES[1],
-        label="share of the result: its part's length over all parts' lengths",
-    )
-    ax.set_xticks(layers)
-    ax.set_xlabel("layer")
-    ax.set_ylim(0, 1)
-    ax.set_ylabel("mean over the 12 heads")
-    ax.grid(axis="y", color="#e1e0d9", linewidth=0.6)
-    ax.set_axisbelow(True)
-    ax.legend(loc="upper right")
-    ax.set_title(
+    show.save(grid, "attention_sink_heads")
+    bars = show.layer_bars(
+        {
+            "share of the weight": weight_share.mean(axis=-1),
+            "share of the result: its part's length over all parts' lengths": (
+                shares.mean(axis=-1)
+            ),
+        },
         "The first token gets more of the weight than of the result "
-        "(last token, mean over the heads of each layer)"
+        "(last token, mean over the heads of each layer)",
+        "mean over the 12 heads",
     )
-    show.save(fig, "attention_sink_layers")
+    show.save(bars, "attention_sink_layers")
 
 
 if __name__ == "__main__":
