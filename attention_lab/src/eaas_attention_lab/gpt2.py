@@ -121,7 +121,7 @@ def gelu(x: Array) -> Array:
 
 
 def softmax(scores: Array) -> Array:
-    """Turn each row into weights that are positive and sum to 1."""
+    """Turn each row into weights that are at least 0 and sum to 1."""
     # Subtracting the row's maximum changes no weight but keeps exp() from
     # overflowing. exp(-inf) = 0: a masked entry gets the weight 0.
     exp = np.exp(scores - scores.max(axis=-1, keepdims=True))
@@ -214,3 +214,50 @@ def forward(token_ids: list[int], weights: dict[str, Array], config: Config) -> 
     # weights), so the logit of vocabulary entry j is row . E[j].
     logits = final @ weights["wte.weight"].T  # [T, V]
     return Trace(list(token_ids), x0, h1, layers, final, logits)
+
+
+# A GPT-2 small enough to need no download. It has GPT-2 small's layout, 12
+# blocks with 12 heads, so that layer 5, head 4 exists in it too, but each head
+# works with 4 numbers instead of 64 (d = 48), and its vocabulary has 50
+# entries. With random_weights() it runs anywhere in a moment.
+TINY: Config = Config(
+    d=48, n_layers=12, n_heads=12, vocab_size=50, max_tokens=32, eps=1e-5
+)
+
+
+def random_weights(config: Config, seed: int = 0) -> dict[str, Array]:
+    """Random weights with GPT-2's names and shapes, for checks without the download.
+
+    The numbers are random, so the attention patterns mean nothing, but every
+    array has the name and the shape that forward() expects. The tests use
+    them with TINY, and so do the exercise checks before GPT-2 small is
+    downloaded.
+    """
+    rng = np.random.default_rng(seed)
+    d = config.d
+
+    def random(*shape: int) -> Array:
+        return (0.3 * rng.standard_normal(shape)).astype(np.float32)
+
+    weights = {
+        "wte.weight": random(config.vocab_size, d),
+        "wpe.weight": random(config.max_tokens, d),
+        "ln_f.weight": 1 + random(d),
+        "ln_f.bias": random(d),
+    }
+    for i in range(config.n_layers):
+        weights |= {
+            f"h.{i}.ln_1.weight": 1 + random(d),
+            f"h.{i}.ln_1.bias": random(d),
+            f"h.{i}.attn.c_attn.weight": random(d, 3 * d),
+            f"h.{i}.attn.c_attn.bias": random(3 * d),
+            f"h.{i}.attn.c_proj.weight": random(d, d),
+            f"h.{i}.attn.c_proj.bias": random(d),
+            f"h.{i}.ln_2.weight": 1 + random(d),
+            f"h.{i}.ln_2.bias": random(d),
+            f"h.{i}.mlp.c_fc.weight": random(d, 4 * d),
+            f"h.{i}.mlp.c_fc.bias": random(4 * d),
+            f"h.{i}.mlp.c_proj.weight": random(4 * d, d),
+            f"h.{i}.mlp.c_proj.bias": random(d),
+        }
+    return weights

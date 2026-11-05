@@ -1,58 +1,32 @@
 """The forward pass on a tiny random GPT-2, without any download.
 
-The weights are random numbers with GPT-2's names and layout, but d = 16,
-4 heads of 4, 2 blocks and a vocabulary of 50, so these tests run anywhere in
-a moment. They check what the scripts rely on, not GPT-2's numbers:
-test_scripts.py and test_reference.py check those.
+The weights are random numbers with GPT-2's names and layout, 12 blocks with
+12 heads, but heads of 4 numbers (d = 48) and a vocabulary of 50 (gpt2.TINY),
+so these tests run anywhere in a moment. They check what the scripts rely on,
+not GPT-2's numbers: test_scripts.py and test_reference.py check those.
 """
 
 import numpy as np
 import pytest
 
 from eaas_attention_lab.gpt2 import (
+    TINY,
     Array,
-    Config,
     causal_mask,
     forward,
     merge_heads,
+    random_weights,
     softmax,
     split_heads,
 )
 
-CONFIG = Config(d=16, n_layers=2, n_heads=4, vocab_size=50, max_tokens=32, eps=1e-5)
+CONFIG = TINY
 IDS = [3, 14, 15, 9, 26, 5, 35]
 
 
 @pytest.fixture(scope="module")
 def weights() -> dict[str, Array]:
-    rng = np.random.default_rng(0)
-    d = CONFIG.d
-
-    def random(*shape: int) -> Array:
-        return (0.3 * rng.standard_normal(shape)).astype(np.float32)
-
-    w = {
-        "wte.weight": random(CONFIG.vocab_size, d),
-        "wpe.weight": random(CONFIG.max_tokens, d),
-        "ln_f.weight": 1 + random(d),
-        "ln_f.bias": random(d),
-    }
-    for i in range(CONFIG.n_layers):
-        w |= {
-            f"h.{i}.ln_1.weight": 1 + random(d),
-            f"h.{i}.ln_1.bias": random(d),
-            f"h.{i}.attn.c_attn.weight": random(d, 3 * d),
-            f"h.{i}.attn.c_attn.bias": random(3 * d),
-            f"h.{i}.attn.c_proj.weight": random(d, d),
-            f"h.{i}.attn.c_proj.bias": random(d),
-            f"h.{i}.ln_2.weight": 1 + random(d),
-            f"h.{i}.ln_2.bias": random(d),
-            f"h.{i}.mlp.c_fc.weight": random(d, 4 * d),
-            f"h.{i}.mlp.c_fc.bias": random(4 * d),
-            f"h.{i}.mlp.c_proj.weight": random(4 * d, d),
-            f"h.{i}.mlp.c_proj.bias": random(d),
-        }
-    return w
+    return random_weights(CONFIG, seed=0)
 
 
 def test_every_matrix_has_its_shape_and_stays_float32(

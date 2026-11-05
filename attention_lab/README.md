@@ -32,6 +32,10 @@ uv run attention-sink
 
 To try another text, layer or head, change `TEXT`, `LAYER` or `HEAD` at the top of a script, save, and run it again.
 
+## An exercise
+
+[One attention head, up close](../exercises/one_head/README.md) is an exercise for 15 to 30 minutes on your own: predict what one head does, explore it, then write parts of it in [my_head.py](src/eaas_attention_lab/exercises/my_head.py). `uv run my-head` checks your code against the forward pass. It needs no download: without GPT-2 small, it runs a tiny GPT-2 with random weights, which has GPT-2 small's 12 layers of 12 heads but knows only 49 words.
+
 ## What you see
 
 - Each script prints its steps in the terminal and saves its figures as PNG files in `outputs/`, which Git ignores; open them in VS Code. A run overwrites its figures: to compare two settings, copy a figure first.
@@ -46,13 +50,16 @@ src/eaas_attention_lab/
     gpt2.py                 library: GPT-2's forward pass
     model_files.py          library: download and read the model's files
     show.py                 library: tables and figures
+    checks.py               library: what the exercises are checked on
     commands/               what you run, one question per file
         model_weights.py    uv run model-weights
         one_head.py         uv run one-head
         attention_sink.py   uv run attention-sink
+    exercises/              what you complete, one exercise per file
+        my_head.py          uv run my-head
 ```
 
-A command holds its settings at the top and one function, `main()`, that answers its question in numbered steps. The measurements that answer the question are written out there, so that you can read and change them. Everything a command reuses, the model, its files and the figures, comes from the library.
+A command holds its settings at the top and one function, `main()`, that answers its question in numbered steps. The measurements that answer the question are written out there, so that you can read and change them. Everything a command reuses, the model, its files and the figures, comes from the library. An exercise's file holds the functions you write, and below them the `main()` that checks them.
 
 ## The model in NumPy
 
@@ -74,7 +81,7 @@ GPT-2 small has the plain design that attention diagrams draw: 12 identical bloc
 
 ## Debug in VS Code
 
-Open the course workspace, `engineering_agentic_ai_systems.code-workspace` in the repository folder, with **File > Open Workspace from File**, or this folder alone with **File > Open Folder**. Both use this project's configurations **Attention: Model weights (local)**, **Attention: One head (local)** and **Attention: Sink (local)** and its own Python environment. Select the **Run and Debug** view, choose one and use **Start Debugging**; see the [debugging guide](../llm_inference/debugging.md) for the procedure. If uv warns that `VIRTUAL_ENV` does not match the project environment, the window shows the repository folder instead of the workspace: see [Several projects, one VS Code workspace](../README.md#several-projects-one-vs-code-workspace).
+Open the course workspace, `engineering_agentic_ai_systems.code-workspace` in the repository folder, with **File > Open Workspace from File**, or this folder alone with **File > Open Folder**. Both use this project's configurations **Attention: Model weights (local)**, **Attention: One head (local)**, **Attention: Sink (local)** and **Attention: My head (exercise)** and its own Python environment. Select the **Run and Debug** view, choose one and use **Start Debugging**; see the [debugging guide](../llm_inference/debugging.md) for the procedure. If uv warns that `VIRTUAL_ENV` does not match the project environment, the window shows the repository folder instead of the workspace: see [Several projects, one VS Code workspace](../README.md#several-projects-one-vs-code-workspace).
 
 A good breakpoint: in `gpt2.py`, the line `attention_weights = softmax(scores + causal_mask(len(h)))` in `block()`, to see the scores of all 12 heads of a layer. To stop in layer 5 only, right-click left of the line number, choose **Add Conditional Breakpoint** and enter `i == 5`. Then start **Attention: One head (local)**; it stops at the script's first line, so use **Continue** once. In the **Debug Console**, `scores[4].round(2)` prints the scores of head 4.
 
@@ -86,7 +93,7 @@ uv run mypy
 uv run ruff check
 ```
 
-The tests need no network. `test_gpt2.py` runs the forward pass on a tiny model with random weights. `test_scripts.py` runs the three scripts on the files downloaded by an earlier run and compares the printed numbers with the known ones; before the first download it is skipped.
+The tests need no network. `test_gpt2.py` runs the forward pass on a tiny model with random weights. `test_scripts.py` runs the three scripts on the files downloaded by an earlier run and compares the printed numbers with the known ones; before the first download it is skipped. `test_exercises.py` runs the exercise as you get it, with GPT-2 small missing, and checks that it never tries to download it.
 
 `test_reference.py` compares `gpt2.py` with Hugging Face Transformers, the library most Python code uses to run such models. It needs PyTorch and Transformers, which no script needs, and is skipped without them. To run it:
 

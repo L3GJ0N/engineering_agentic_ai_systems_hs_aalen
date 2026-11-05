@@ -73,6 +73,15 @@ def download() -> Path:
     return FOLDER
 
 
+def is_downloaded() -> bool:
+    """Whether all three files are there, without contacting the server.
+
+    hf_hub_download writes a file into FOLDER only once it is complete, so a
+    file that is there is whole.
+    """
+    return all((FOLDER / name).is_file() for name in FILES)
+
+
 def read_config(path: Path) -> Config:
     """Read the hyperparameters from config.json."""
     raw = json.loads(path.read_text(encoding="utf-8"))

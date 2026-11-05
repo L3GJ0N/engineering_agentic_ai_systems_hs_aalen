@@ -25,10 +25,12 @@ Python teaching examples for the master's course **Engineering Agentic AI System
 - Three short, explained scripts: where W_Q, W_K, W_V and W_O are in the model file; one attention head computed by hand for "the cat sat on it"; and why most heads put their weight on the first token.
 - The whole model in about 100 lines of NumPy, keeping the matrices of every attention head, and checked against the reference implementation.
 - Figures of the matrices, saved as PNG files.
+- The starter of an exercise on one head, with checks that run before the model is downloaded.
 
 ## Exercises
 
 - [Token viewer](exercises/token_viewer/README.md): a group exercise in class. Each group builds a token viewer for chat requests, in Python, starting from its own copy of a template repository. The task sheet says what to deliver and how the presentation works.
+- [One attention head, up close](exercises/one_head/README.md): an exercise for 15 to 30 minutes on your own. Predict and explore what one head of GPT-2 small does, then write parts of it in `attention_lab`, where `uv run my-head` checks your code, with or without the model downloaded.
 
 ## Start here
 
@@ -101,7 +103,7 @@ In the course workspace, each example project uses its own Python environment, `
 
 - **llm_inference:** **LLM: Inspect HTTP (offline)**, **LLM: NVIDIA inference (live)**, **LLM: NVIDIA inference via OpenAI SDK (live)**, **LLM: OpenRouter inference (live)**, **LLM: OpenRouter inference via OpenAI SDK (live)** and **LLM: Attach to uv/debugpy (5678)**.
 - **token_lab:** **Tokens: Tokenize text (local)** and **Tokens: Tokenize chat (local)**.
-- **attention_lab:** **Attention: Model weights (local)**, **Attention: One head (local)** and **Attention: Sink (local)**.
+- **attention_lab:** **Attention: Model weights (local)**, **Attention: One head (local)**, **Attention: Sink (local)** and **Attention: My head (exercise)**.
 
 Select the **Run and Debug** view, choose a configuration and use **Start Debugging**; the list names the project after each configuration. The launch configurations run `uv sync` in the example project before starting its Python interpreter. See the [debugging guide](llm_inference/debugging.md) for the full procedure, platform differences and breakpoint exercises.
 
@@ -149,8 +151,10 @@ engineering_agentic_ai_systems_hs_aalen/
             README.md            the task sheet
             target_page.png      the picture on the task sheet
             samples/             the course request's messages as JSON
+        one_head/
+            README.md            the task sheet; the starter is in attention_lab
 ```
 
-Each example owns its Python environment and dependencies. There is no root Python project; run uv commands from the example's folder, `llm_inference`, `token_lab` or `attention_lab`. An exercise's folder holds its task sheet and samples; the code a group starts from is a template repository of its own. Additional examples can be added as the course develops.
+Each example owns its Python environment and dependencies. There is no root Python project; run uv commands from the example's folder, `llm_inference`, `token_lab` or `attention_lab`. An exercise's folder holds its task sheet and samples; the code a group starts from is a template repository of its own. A short exercise on one of the projects is the exception: its starter is part of that project, such as `attention_lab/src/eaas_attention_lab/exercises/my_head.py`, so that it uses the project's environment and downloaded model. Additional examples can be added as the course develops.
 
 This repository contains the shareable examples. Lecture slides and other course-planning materials are maintained separately.

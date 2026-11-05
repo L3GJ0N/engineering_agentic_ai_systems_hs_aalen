@@ -48,6 +48,22 @@
             "preLaunchTask": "uv: sync",
             "stopOnEntry": true,
             "justMyCode": true
+        },
+        {
+            "name": "Attention: My head (exercise)",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "eaas_attention_lab.exercises.my_head",
+            "python": "${workspaceFolder}/.venv/bin/python",
+            "windows": {
+                "python": "${workspaceFolder}/.venv/Scripts/python.exe"
+            },
+            "cwd": "${workspaceFolder}",
+            "console": "integratedTerminal",
+            "envFile": "",
+            "preLaunchTask": "uv: sync",
+            "stopOnEntry": true,
+            "justMyCode": true
         }
     ]
 }
