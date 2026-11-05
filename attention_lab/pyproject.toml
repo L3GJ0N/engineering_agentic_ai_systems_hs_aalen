@@ -16,6 +16,8 @@ dependencies = [
 model-weights = "eaas_attention_lab.commands.model_weights:main"
 one-head = "eaas_attention_lab.commands.one_head:main"
 attention-sink = "eaas_attention_lab.commands.attention_sink:main"
+# The exercise of exercises/one_head: your code, checked.
+my-head = "eaas_attention_lab.exercises.my_head:main"
 
 [build-system]
 requires = ["uv_build>=0.8.19,<0.9.0"]
