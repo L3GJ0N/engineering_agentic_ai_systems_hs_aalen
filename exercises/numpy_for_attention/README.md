@@ -2,7 +2,7 @@
 
 `attention_lab` computes GPT-2 in about 100 lines of NumPy, in [gpt2.py](../../attention_lab/src/eaas_attention_lab/gpt2.py). This exercise teaches the NumPy those lines use, on the lab's own arrays. Afterwards you can read every line of `gpt2.py` and of the three commands, and solve tasks 3, 4 and 6 of [one_head](../one_head/README.md) on your own.
 
-You work alone. Parts A to D follow the four rounds of the session on 26 November and take about 50 to 70 minutes, more than the session leaves for them: finish them at home. Part E, reading `gpt2.py`, takes about 20 to 30 minutes more. Tasks marked ★ are optional. Everything runs on the tiny GPT-2 with random weights, on your laptop's CPU, without any download.
+You work alone. Parts A to D follow the four rounds of the session on 26 November; there you work on them in the second half, after all four rounds, for about 45 minutes. Most need 50 to 70 minutes: finish them at home. Part E, reading `gpt2.py`, takes about 20 to 30 minutes more. Tasks marked ★ are optional. Everything runs on the tiny GPT-2 with random weights, on your laptop's CPU, without any download.
 
 All you change is one file: [my_numpy.py](../../attention_lab/src/eaas_attention_lab/exercises/my_numpy.py) in `attention_lab`. Everything else happens in the Python REPL.
 
@@ -252,7 +252,7 @@ True
 
 ### B2. Look up the tokens: `embed()`
 
-`forward()` in `gpt2.py` starts with the input of the first block: each token's row of the embedding table, `weights["wte.weight"]`, [V, d], plus the row of the position table, `weights["wpe.weight"]`, for its position, 0 for the first token, 1 for the second. Write `embed(weights, ids)` in `my_numpy.py` without looking at `forward()`, and without a loop; slide 9 shows how a list of indices picks rows. To try it in the REPL:
+`forward()` in `gpt2.py` starts with the input of the first block: each token's row of the embedding table, `weights["wte.weight"]`, [V, d], plus the row of the position table, `weights["wpe.weight"]`, for its position, 0 for the first token, 1 for the second. Write `embed(weights, ids)` in `my_numpy.py` without looking at `forward()`, and without a loop; slide 8 shows how a list of indices picks rows. To try it in the REPL:
 
 <!-- input: b2 -->
 ```python
