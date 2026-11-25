@@ -7,7 +7,7 @@ Nothing here downloads anything; uv run model-weights does that, once.
 
 Each check prints one line: True, "not written yet", or False with a hint at
 what differs, such as a transposed matrix, a constant factor, rows that do not
-sum to 1, or the largest difference and where it is.
+sum to 1, the wrong dtype, or the largest difference and where it is.
 """
 
 import warnings
@@ -132,15 +132,22 @@ def check(
     mistakes: dict[str, Array] | None = None,
     diagnose: Callable[[Array], str] | None = None,
     if_nan: str = "",
+    dtype: type[np.generic] | None = None,
+    if_dtype: str = "",
+    if_raised: dict[str, str] | None = None,
+    if_shape: str = "",
 ) -> bool | None:
     """Run function(*args), compare its result with expected, and print one line.
 
     mistakes maps a hint to the result a typical mistake gives: if the result
     matches one, that hint is printed. Otherwise diagnose(result) gives the
-    hint, if it is there, or a general comparison, followed by if_nan when
-    the result holds nan or inf where numbers are expected. Arrays are copied
-    before the call, so a function that changes its inputs cannot spoil the
-    next check. Returns True, False, or None while the function is not
+    hint, if it is there and returns some text, or a general comparison,
+    followed by if_nan when the result holds nan or inf where numbers are
+    expected. With dtype, a result with the right numbers but another dtype is
+    False, followed by if_dtype. if_raised maps a text in an error message to a
+    hint, and if_shape follows the message about a wrong shape. Arrays are
+    copied before the call, so a function that changes its inputs cannot spoil
+    the next check. Returns True, False, or None while the function is not
     written yet.
     """
     label = f"    {name + ':':<22}"
@@ -153,7 +160,14 @@ def check(
             print(label + _not_written(function, error))
             return None
         except Exception as error:  # any error of your code is yours to see
-            print(label + f"False, it raised {type(error).__name__}: {error}")
+            message = str(error).strip()
+            raised = f"False, it raised {type(error).__name__}: {message}"
+            known = (if_raised or {}).items()
+            extra = next((text for part, text in known if part in message), "")
+            if extra:
+                stop = "" if message.endswith(".") else "."
+                raised += f"{stop} {extra[:1].upper()}{extra[1:]}"
+            print(label + raised)
             return False
     numpy_said = sorted({str(warning.message) for warning in caught})
     if result is None:
@@ -166,9 +180,16 @@ def check(
         return False
     want = np.asarray(expected, dtype=np.float64)
     if mine.shape != want.shape:
-        print(label + f"False, its shape is {mine.shape}, expected {want.shape}")
+        shape = f"False, its shape is {mine.shape}, expected {want.shape}"
+        print(label + shape + (f": {if_shape}" if if_shape else ""))
         return False
     if np.allclose(mine, want, atol=1e-5):
+        found = np.asarray(result).dtype
+        if dtype is not None and found != np.dtype(dtype):
+            wrong = f"False, the numbers are right, but its dtype is {found}"
+            wanted = f", not {np.dtype(dtype)}"
+            print(label + wrong + wanted + (f": {if_dtype}" if if_dtype else ""))
+            return False
         print(label + "True")
         return True
     hint = next(
@@ -182,7 +203,7 @@ def check(
         None,
     )
     if hint is None and diagnose is not None:
-        hint = diagnose(mine)
+        hint = diagnose(mine) or None
     if hint is None:
         hint = _hint(mine, want)
         if if_nan and not np.all(np.isfinite(mine) | ~np.isfinite(want)):
