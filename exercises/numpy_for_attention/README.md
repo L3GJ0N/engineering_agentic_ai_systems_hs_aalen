@@ -2,7 +2,7 @@
 
 `attention_lab` computes GPT-2 in about 100 lines of NumPy, in [gpt2.py](../../attention_lab/src/eaas_attention_lab/gpt2.py). This exercise teaches the NumPy those lines use, on the lab's own arrays. Afterwards you can read every line of `gpt2.py` and of the three commands, and solve tasks 3, 4 and 6 of [one_head](../one_head/README.md) on your own.
 
-You work alone. Parts A to D follow the four rounds of the session on 26 November, about 40 minutes; part E, reading `gpt2.py`, takes about 17 minutes more, at home if need be. Tasks marked ★ are optional. Everything runs on the tiny GPT-2 with random weights, on your laptop's CPU, without any download.
+You work alone. Parts A to D follow the four rounds of the session on 26 November and take about 50 to 70 minutes, more than the session leaves for them: finish them at home. Part E, reading `gpt2.py`, takes about 20 to 30 minutes more. Tasks marked ★ are optional. Everything runs on the tiny GPT-2 with random weights, on your laptop's CPU, without any download.
 
 All you change is one file: [my_numpy.py](../../attention_lab/src/eaas_attention_lab/exercises/my_numpy.py) in `attention_lab`. Everything else happens in the Python REPL.
 
@@ -21,7 +21,7 @@ All you change is one file: [my_numpy.py](../../attention_lab/src/eaas_attention
 
   `trace` holds everything the tiny GPT-2 computed for "the cat sat on it" with `<|endoftext|>` in front, 6 tokens; `layer` is block 5 of its 12 blocks. The tasks of parts A and B continue in this REPL.
 - **The checks.** `uv run my-numpy` checks the functions in `my_numpy.py` and prints one line for each: `True`, `not written yet`, or `False` with a hint at what to change.
-- **The boxes.** Each task ends with a closed box, **Check your reasoning**. Open it after you tried. Its REPL sessions are real runs.
+- **The boxes.** Each task ends with a closed box, **Check your reasoning**. Open it after you tried. Its REPL sessions are real runs. Your REPL writes in front of a warning where it came from, such as `<python-input-3>:1:`; the boxes leave that out.
 
 Write the code yourself: a coding agent or chatbot that writes these few lines takes the point away. Asking one for an explanation is fine.
 
@@ -51,11 +51,11 @@ They print nothing: an assignment shows no result. Type `layer` alone to see wha
    uv run my-numpy
    ```
 
-The first run checks seven functions. Six say `not written yet`: you write them in parts B, C and D. The first one, `scaled_scores`, says `False`: that is task A3.
+The first run checks eight functions. Seven say `not written yet`: six you write in parts B, C and D, the seventh, `merge`, is the ★ task of part D. The first one, `scaled_scores`, says `False`: that is task A3.
 
 ## Part A: one block of numbers
 
-About 10 minutes.
+About 10 to 15 minutes.
 
 <details>
 <summary>How to make arrays (to look up)</summary>
@@ -86,7 +86,7 @@ A shape is a tuple: `np.zeros((2, 3))`, with two pairs of parentheses. Without `
 
 ### A1. The shapes of a trace
 
-The comments of `gpt2.py`, lines 62 to 83, give every shape as `[rows, columns]`: T tokens, d numbers per token, d_h numbers per head, V entries in the vocabulary. In the tiny GPT-2, d = 48, there are 12 heads of d_h = 4, and V = 50. Predict what each line prints, then type it into your REPL:
+The comments of `gpt2.py`, lines 62 to 90, give every shape in brackets, such as `[T, d]` or `[heads, T, d_h]`: T tokens, d numbers per token, d_h numbers per head, V entries in the vocabulary. In the tiny GPT-2, d = 48, there are 12 heads of d_h = 4, and V = 50. `.ndim` is the number of axes, `.size` the number of numbers. Predict what each line prints, then type it into your REPL:
 
 <!-- input: a1 -->
 ```python
@@ -126,7 +126,7 @@ A shape lists the length of every axis, from the first to the last. `layer.q` is
 
 ### A2. A head is a window into one block
 
-An array is one block of numbers in memory plus a header: its shape, its dtype and its strides, the number of bytes from one element to the next along each axis. `k` below holds the keys of head 4. Predict, then run:
+An array is one block of numbers in memory plus a header: its shape, its dtype and its strides, the number of bytes from one element to the next along each axis. `k` below holds the keys of head 4. When an array only looks into the block of another one, `.base` is that other array. Predict, then run:
 
 <!-- input: a2 -->
 ```python
@@ -137,7 +137,7 @@ np.shares_memory(k, k.T)
 k.base.shape
 ```
 
-Why are there 576 bytes from one row of `k` to the next, although a row holds 4 numbers of 4 bytes? And why does `k.T` cost nothing?
+After the run: why is the step from one row of `k` to the next so much larger than a row of 4 numbers of 4 bytes? And why does `k.T` cost nothing?
 
 <details>
 <summary>Check your reasoning</summary>
@@ -155,13 +155,13 @@ True
 (6, 144)
 ```
 
-Along a row, the next number is 4 bytes further: a float32. The next row is 576 bytes further, because `k` is no matrix of its own: it is a window into the block `qkv` of `gpt2.py`, line 159, which `k.base` shows. Each row of `qkv` holds 144 numbers, 144 × 4 = 576 bytes: the queries, keys and values of all 12 heads side by side. `k.T` writes a new header with the two strides swapped. No number moves, so `k.T` shares its memory with `k` and costs nothing, however large `k` is.
+Along a row, the next number is 4 bytes further: a float32. The next row is 576 bytes further, because `k` is no matrix of its own: it is a window into the block `qkv` of `gpt2.py`, line 159, which `k.base` shows. Each row of `qkv` holds 144 numbers, 144 × 4 = 576 bytes: the queries, keys and values of all 12 heads side by side. `k.T` writes a new header with the two strides swapped. No number moves, so `k.T` shares its memory with `k` and costs nothing, however large `k` is. An array that is only a new header over another array's block, such as `k` and `k.T`, is called a view.
 
 </details>
 
 ### A3. Fix the float64 leak
 
-`scaled_scores(q, k)` in `my_numpy.py` computes S = Q Kᵀ / √d_h of one head. The first `uv run my-numpy` says its numbers are right, but its dtype is float64. Find out why: `gpt2.py`, lines 118 and 119, has the answer. Change the function so that its result is float32, and run until the check says `True`.
+`scaled_scores(q, k)` in `my_numpy.py` computes S = Q Kᵀ / √d_h of one head. The first `uv run my-numpy` says its numbers are right, but its dtype is float64. Find out why: `gpt2.py`, lines 118 and 119, has the answer. Change the formula, not the type of its result (no `.astype`), so that every step stays float32, and run until the check says `True`.
 
 <details>
 <summary>Check your reasoning</summary>
@@ -206,7 +206,7 @@ Python numbers, whole or not, keep float32. A NumPy float64 number or a float64 
 
 ## Part B: rows are tokens
 
-About 10 minutes.
+About 10 to 15 minutes.
 
 ### B1. Rows, columns, heads and layers
 
@@ -252,7 +252,7 @@ True
 
 ### B2. Look up the tokens: `embed()`
 
-`forward()` in `gpt2.py` starts with the input of the first block: each token's row of the embedding table, `weights["wte.weight"]`, [V, d], plus the row of the position table, `weights["wpe.weight"]`, for its position, 0 for the first token, 1 for the second. Write `embed(weights, ids)` in `my_numpy.py` without looking at `forward()`, and without a loop. To try it in the REPL:
+`forward()` in `gpt2.py` starts with the input of the first block: each token's row of the embedding table, `weights["wte.weight"]`, [V, d], plus the row of the position table, `weights["wpe.weight"]`, for its position, 0 for the first token, 1 for the second. Write `embed(weights, ids)` in `my_numpy.py` without looking at `forward()`, and without a loop; slide 9 shows how a list of indices picks rows. To try it in the REPL:
 
 <!-- input: b2 -->
 ```python
@@ -263,7 +263,7 @@ ids
 model.weights["wte.weight"].shape, model.weights["wpe.weight"].shape
 ```
 
-Then run `uv run my-numpy`. When `embed` says `True`, compare your lines with lines 203 and 204 of `gpt2.py`.
+Then run `uv run my-numpy`. When `embed` says `True`, compare your lines with lines 203 and 204 of `gpt2.py`. To call your own `embed` in the REPL, start a new one: a running REPL keeps the `my_numpy.py` it imported with the start lines.
 
 <details>
 <summary>Check your reasoning</summary>
@@ -294,7 +294,7 @@ The first token is the token that is read, so it is column 0 of every A, in all 
 
 </details>
 
-### ★ A boolean index copies, a slice writes through
+### ★ A boolean index copies, a row picked by an index writes through
 
 <!-- input: bstar -->
 ```python
@@ -327,13 +327,13 @@ array([0.5, 0.5, 0.5, 0.5, 0.5, 0.5], dtype=float32)
 False
 ```
 
-A boolean index picks the cells where the mask is `True`, the future, as one flat array; they are all 0 in A. It copies them, so it shares no memory with `b`. A slice such as `b[0]` is a view: writing into it changes `b`. That is why `b` is a copy of `a`, and why the checks of `my_numpy.py` copy every array they hand to your functions.
+A boolean index picks the cells where the mask is `True`, the future, as one flat array; they are all 0 in A. It copies them, so it shares no memory with `b`. A row picked by an index, such as `b[0]`, is a view, like a slice such as `b[1:]`: writing into it changes `b`. That is why `b` is a copy of `a`, and why the checks of `my_numpy.py` copy every array they hand to your functions.
 
 </details>
 
 ## Part C: one line for all rows
 
-About 11 minutes.
+About 15 to 25 minutes.
 
 ### C1. Which axis disappears?
 
@@ -406,7 +406,7 @@ Mean and variance run along the last axis, one value per row, and `keepdims=True
 
 ### C3. A window instead of the whole past: `window_mask()`
 
-Some models let each token read only a window of the latest tokens, to save work on long texts: Longformer (Beltagy et al. 2020, arXiv 2004.05150) and Mistral 7B (Jiang et al. 2023, arXiv 2310.06825) do. Write `window_mask(t, w)`: an additive mask [t, t], float32, with 0 where token i may read token j, and minus infinity where it may not, in the future and more than w tokens back. No loop. `np.triu`, `np.tril` and `np.where` may help; their `k` argument moves the diagonal.
+Some models let each token read only a window of nearby tokens, to save work on long texts. In Mistral 7B (Jiang et al. 2023, arXiv 2310.06825), each token reads itself and a window of the tokens just before it; Longformer (Beltagy et al. 2020, arXiv 2004.05150) uses a window on both sides of each token, plus a few tokens that read everything. Write `window_mask(t, w)` for the first kind: an additive mask [t, t], float32, with 0 where token i may read token j, and minus infinity where it may not, in the future and more than w tokens back. No loop. `np.triu` and `np.tril`, whose `k` argument moves the diagonal, and `np.where` may help.
 
 Once `window_mask` says `True`, every run prints A of head 4 in layer 5 with this mask. Change `WINDOW` at the top of `my_numpy.py` and run again: what happens to the rows?
 
@@ -460,13 +460,13 @@ RuntimeWarning: invalid value encountered in subtract
 array([nan, nan], dtype=float32)
 ```
 
-float32 holds numbers up to about 3.4 × 10³⁸, the first line, and exp passes that between 88 and 89: the result is `inf`, with a warning. inf divided by inf is nan. Subtracting the row's maximum first changes no weight, because every exp is multiplied by the same factor, but the largest exp becomes exp(0) = 1. A row in which every score is minus infinity has nothing to read: minus infinity minus minus infinity is nan. That is why `softmax()` in `gpt2.py` subtracts the largest score after the mask, and why a mask must leave every token at least itself.
+float32 holds numbers up to about 3.4 × 10³⁸, the first line, and exp passes that between 88 and 89: the result is `inf`, with a warning. inf divided by inf is nan. Subtracting the row's maximum first changes no weight, because every exp is multiplied by the same factor, but the largest exp becomes exp(0) = 1. A row in which every score is minus infinity has nothing to read: minus infinity minus minus infinity is nan. `softmax()` in `gpt2.py` subtracts each row's largest score after the mask, so such a row would give nan: a mask must leave every token at least itself.
 
 </details>
 
 ## Part D: heads as a stack
 
-About 10 minutes.
+About 10 to 15 minutes.
 
 ### D1. Stacks
 
@@ -533,7 +533,7 @@ Write `all_scores(q, k)`: S = Q Kᵀ / √d_h for all heads at once, [heads, T, 
 
 ### D3. Where is the largest score? `largest_score()`
 
-Write `largest_score(s)`: the cell (i, j) of the largest score in one head's S, [T, T], as two Python ints. No loop. Once it says `True`, every run prints the cell: does the largest score lie in the future, where the mask hides it?
+Write `largest_score(s)`: the cell (i, j) of the largest score in one head's S, [T, T]. No loop; `argmax()` and `np.unravel_index` may help. Once it says `True`, every run prints the cell: does the largest score lie in the future, where the mask hides it?
 
 <details>
 <summary>Check your reasoning</summary>
@@ -549,31 +549,31 @@ Write `merge(heads)`: [heads, T, d_h] to [T, d], each token's row holding all he
 <details>
 <summary>Check your reasoning</summary>
 
-`reshape` reads the stack head by head, so `reshape` alone puts the heads below each other. Transposing first, to [T, heads, d_h], brings each token's results of all heads together, and `reshape` then lays them side by side. For the head outputs, a fresh block, the transposed stack no longer reads row by row, so this `reshape` has to copy; task E2 shows a case in which it does not.
+`reshape` reads the stack head by head, so `reshape` alone fills each row with one head's results for several tokens. Transposing first, to [T, heads, d_h], brings each token's results of all heads together, and `reshape` then lays them side by side. For the head outputs, a fresh block, the transposed stack no longer reads row by row, so this `reshape` has to copy. Whether it always does is a question of task E2.
 
 </details>
 
 ### ★ A loop against one `@`
 
-How much faster is one `@` than a Python loop? Time both on your laptop:
+How much faster is one `@` than a Python loop? Time both on your laptop, with the sizes of slide 2, 1024 tokens and d_h = 64. The loop takes about a second:
 
 ```python
-import time
-q = np.random.default_rng(0).standard_normal((512, 64)).astype(np.float32)
-start = time.perf_counter(); loop = [[q[i] @ q[j] for j in range(512)] for i in range(512)]; time.perf_counter() - start
-start = time.perf_counter(); s = q @ q.T; time.perf_counter() - start
+import time, timeit
+q = np.random.default_rng(0).standard_normal((1024, 64)).astype(np.float32)
+start = time.perf_counter(); loop = [[q[i] @ q[j] for j in range(1024)] for i in range(1024)]; time.perf_counter() - start
+min(timeit.repeat(lambda: q @ q.T, number=1, repeat=20))
 ```
 
 <details>
 <summary>Check your reasoning</summary>
 
-The loop runs a Python step for each of the 512 × 512 pairs; `@` hands the whole product to a compiled library, BLAS, which can use several cores (`np.show_config()` names the one your NumPy uses). The slides show the times on the instructor's laptop. Your numbers differ, but the loop stays slower by orders of magnitude.
+The loop runs a Python step for each of the 1024 × 1024 pairs; `@` hands the whole product to a compiled library, BLAS, which can use several cores (`np.show_config()` names the one your NumPy uses). The first `@` also has to start BLAS, so the last line takes the fastest of 20 runs, as slide 2 did. Your numbers differ from the slide with the laptop and its power settings, but the loop stays slower by two to three orders of magnitude.
 
 </details>
 
 ## Part E: read gpt2.py
 
-About 17 minutes, at home if need be.
+About 20 to 30 minutes, at home if need be.
 
 ### E1. The shapes of `block()`
 
@@ -676,7 +676,7 @@ False
 
 ### E3. A reading map of the commands
 
-For each line, say what it computes and the shape of its result, for "the cat sat on it" in the tiny GPT-2. Then check the shapes in your REPL with the box's lines.
+For each line, say what it computes and the shape of its result, for "the cat sat on it" in the tiny GPT-2. Then open the box and run its lines in your REPL.
 
 1. `one_head.py`, line 75: `w_q, w_k, w_v = np.split(w[prefix + "attn.c_attn.weight"], 3, axis=1)`
 2. `one_head.py`, lines 77 and 78: `head = slice(HEAD * d_h, (HEAD + 1) * d_h)`, then `x @ w_q[:, head] + b_q[head]`
@@ -686,7 +686,7 @@ For each line, say what it computes and the shape of its result, for "the cat sa
 6. `attention_sink.py`, line 91: `np.linalg.norm(last[..., np.newaxis] * trace.values, axis=-1)`
 7. `model_weights.py`, lines 146 and 147: `np.tril(np.ones((n, n), np.float32))`, compared with GPT-2's stored mask by `np.array_equal`
 8. `model_weights.py`, line 165: `int(np.prod(shape))`
-9. `my_head.py`, line 246: `np.all(a[show.future(t)] == 0)`
+9. `one_head.py`, line 164: `late = softmax(s) * ~show.future(t)`
 10. `gpt2.py`, line 38: `Array: TypeAlias = NDArray[np.floating[Any]]`
 
 <details>
@@ -715,11 +715,13 @@ array([[1., 0., 0.],
        [1., 1., 1.]], dtype=float32)
 >>> int(np.prod((48, 144)))
 6912
->>> bool(np.all(a[show.future(6)] == 0))
-True
+>>> ~show.future(3)
+array([[ True, False, False],
+       [ True,  True, False],
+       [ True,  True,  True]])
 ```
 
-1. Three [d, d] matrices, W_Q, W_K and W_V, from the [d, 3d] block of a layer. 2. `slice(...)` is a stored `start:stop`: the d_h columns of one head, so the head's queries are [T, d_h]. 3. The tokens by weight in the last row, largest first: `argsort` sorts ascending, so it sorts the negated weights. 4. The last row of every head, [layers, heads, T], and the number of heads whose largest weight goes to token 0. 5. The length of every value vector, [layers, heads, T], then their mean over the tokens after the first, [layers, heads]. 6. `np.newaxis` adds an axis of length 1, so [layers, heads, T, 1] times [layers, heads, T, d_h] multiplies each value vector by its weight. 7. GPT-2's stored mask has 1 where a token may read and 0 above the diagonal: `np.tril` keeps the lower triangle. 8. The number of numbers of a tensor from its shape. 9. Whether every weight in the future is 0. 10. A type hint only: an array of floating-point numbers; Python does not check it.
+1. Three [d, d] matrices, W_Q, W_K and W_V, from the [d, 3d] block of a layer. 2. `slice(...)` is a stored `start:stop`: the d_h columns of one head, so the head's queries are [T, d_h]. 3. The tokens by weight in the last row, largest first: `argsort` sorts ascending, so it sorts the negated weights. 4. The last row of every head, [layers, heads, T], then for every head whether its largest weight goes to token 0, [layers, heads], and the number of such heads, one Python int. 5. The length of every value vector, [layers, heads, T], then their mean over the tokens after the first, [layers, heads]. 6. `np.newaxis` adds an axis of length 1, so [layers, heads, T, 1] times [layers, heads, T, d_h] multiplies each value vector by its weight; the norm along the last axis then gives the length of each weighted vector, [layers, heads, T]. 7. GPT-2's stored mask has 1 where a token may read and 0 above the diagonal: `np.tril` keeps the lower triangle. 8. The number of numbers of a tensor from its shape. 9. `~` turns `True` into `False` and back: `True` where a token may read. In arithmetic, `True` counts as 1 and `False` as 0, so the product sets every weight in the future to 0, after the softmax: the rows then sum to less than 1, which step 6 of `one_head.py` prints. 10. A type hint only: an array of floating-point numbers; Python does not check it.
 
 </details>
 
@@ -727,7 +729,7 @@ True
 
 `show.py` draws the figures of the commands. In `heatmap()`, `np.ma.masked_array` hides the masked cells, which `imshow` then paints grey, and `np.ndindex(t, t)` runs through all cells (i, j). In `head_grid()`, `fig.subplots(...)` returns a NumPy array of Axes, and `.flat` runs through it row by row.
 
-To see the shapes of E1 in the running model: in `gpt2.py`, set a breakpoint on the line `attention_weights = softmax(scores + causal_mask(len(h)))` (click left of its line number), select the **Run and Debug** view, choose **Attention: My NumPy (exercise)** and click **Start Debugging**. The debugger first stops at the top of `my_numpy.py`: click **Continue**. At the breakpoint, open the **Debug Console** next to **Terminal** in the bottom panel and type `scores.shape`, `q.strides` or `x.dtype`. The breakpoint stops once per block: click **Stop** when you are done.
+To see the shapes of E1 in the running model: in `gpt2.py`, set a breakpoint on the line `attention_weights = softmax(scores + causal_mask(len(h)))` (click left of its line number), select the **Run and Debug** view, choose **Attention: My NumPy (exercise)** and click **Start Debugging**. The debugger first stops at the top of `my_numpy.py`: click **Continue**. At the breakpoint, open the **Debug Console** next to **Terminal** in the bottom panel and type `scores.shape`, `q.strides` or `x.dtype`. The run uses the check text of 9 tokens, so T is 9 there, not 6. The breakpoint stops once per block: click **Stop** when you are done.
 
 ## First aid
 
@@ -738,9 +740,10 @@ To see the shapes of E1 in the running model: in `gpt2.py`, set a breakpoint on 
 | `ValueError: matmul: Input operand 1 has a mismatch in its core dimension 0, ...` | Read the end of the line, `(size ... is different from ...)`: the inner sizes of `@` differ. Print both shapes. |
 | `ValueError: operands could not be broadcast together with shapes ...` | Compare the two shapes from the right; a reduction may need `keepdims=True`. |
 | `IndexError: index 6 is out of bounds for axis 0 with size 6` | Indices count from 0: the last of 6 rows is 5, or -1. |
-| `RuntimeWarning: overflow encountered in exp` | A number above about 88 went into `exp` in float32: subtract the row's largest value first. |
+| `RuntimeWarning: overflow encountered in exp` | A number above about 88 went into `exp` in float32: subtract the row's largest value first. The REPL of Python 3.13, which the lab uses, repeats a warning at every call; older ones show the same warning only once. |
 | `The tiny model does not know: ...` | The tiny GPT-2 knows 49 words; the message lists them. |
 | `not written yet` | The function still raises `NotImplementedError`: write it in place of that line. |
+| Your function works in the file, but the REPL still raises `NotImplementedError` | A running REPL keeps the `my_numpy.py` it imported at the start: `exit()` and start a new REPL. |
 
 ## Your changes and git pull
 

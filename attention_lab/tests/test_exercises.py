@@ -107,7 +107,7 @@ def test_an_error_and_a_wrong_shape_get_their_hints(
 
     hints = {"core dimension": "swap the last two axes"}
     assert checks.check("f", broken, expected=EVEN, if_raised=hints) is False
-    assert "core dimension. swap the last two axes" in capsys.readouterr().out
+    assert "core dimension. Swap the last two axes" in capsys.readouterr().out
     assert checks.check("f", lambda: 7, expected=np.ones(2), if_shape="two") is False
     assert "its shape is (), expected (2,): two" in capsys.readouterr().out
 

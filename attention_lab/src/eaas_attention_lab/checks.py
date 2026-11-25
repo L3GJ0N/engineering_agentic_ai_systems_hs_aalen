@@ -160,10 +160,14 @@ def check(
             print(label + _not_written(function, error))
             return None
         except Exception as error:  # any error of your code is yours to see
-            raised = f"False, it raised {type(error).__name__}: {error}"
+            message = str(error).strip()
+            raised = f"False, it raised {type(error).__name__}: {message}"
             known = (if_raised or {}).items()
-            extra = next((text for part, text in known if part in str(error)), "")
-            print(label + raised + (f". {extra}" if extra else ""))
+            extra = next((text for part, text in known if part in message), "")
+            if extra:
+                stop = "" if message.endswith(".") else "."
+                raised += f"{stop} {extra[:1].upper()}{extra[1:]}"
+            print(label + raised)
             return False
     numpy_said = sorted({str(warning.message) for warning in caught})
     if result is None:

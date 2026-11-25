@@ -103,14 +103,14 @@ def all_scores(q: Array, k: Array) -> Array:
 def largest_score(s: Array) -> tuple[int, int]:
     """Task D3: the cell (i, j) of the largest score of one head's S, [T, T].
 
-    Row i is the token that reads, column j the token that is read. Return two
-    Python ints. No loop.
+    Row i is the token that reads, column j the token that is read. Return the
+    cell as (i, j). No loop.
     """
     raise NotImplementedError
 
 
 def merge(heads: Array) -> Array:
-    """Star task D1 (optional): [heads, T, d_h] to [T, d], without merge_heads().
+    """Part D, star task (optional): [heads, T, d_h] to [T, d], no merge_heads().
 
     Row i of the result holds token i's results of all heads side by side: the d_h
     numbers of head 0 first, then those of head 1, and so on. No loop.
@@ -233,6 +233,7 @@ def check_part_c(trace: Trace, weights: dict[str, Array], labels: list[str]) -> 
             )
         return ""
 
+    whole = gain * (x - x.mean()) / np.sqrt(x.var() + 1e-5) + bias
     checks.check(
         "layer_norm_rows",
         layer_norm_rows,
@@ -241,12 +242,17 @@ def check_part_c(trace: Trace, weights: dict[str, Array], labels: list[str]) -> 
         bias,
         1e-5,
         expected=layer_norm(x, gain, bias, 1e-5),
+        mistakes={
+            "one mean and one variance for the whole matrix: take them for each "
+            "token's row, along the last axis (axis=-1)": whole
+        },
         diagnose=diagnose,
         if_nan="row 2 has the same number everywhere, so its variance is 0: add eps to "
         "the variance before the square root",
         if_raised={
-            "could not be broadcast": "keep the reduced axis with keepdims=True, so "
-            "that a row's mean, (T, 1), fits its row, (T, d)"
+            "could not be broadcast": "keep the reduced axis with keepdims=True, in "
+            "the mean and in the variance, so that a row's value, (T, 1), fits its "
+            "row, (T, d)"
         },
     )
 
@@ -259,6 +265,8 @@ def check_part_c(trace: Trace, weights: dict[str, Array], labels: list[str]) -> 
         return ""
 
     read = "token i reads itself and the w tokens before it"
+    no_self = window(t, WINDOW)
+    np.fill_diagonal(no_self, -np.inf)
     works = checks.check(
         "window_mask",
         window_mask,
@@ -270,6 +278,7 @@ def check_part_c(trace: Trace, weights: dict[str, Array], labels: list[str]) -> 
             "-inf too": window(t, WINDOW, future=True),
             f"one token too many: {read}": window(t, WINDOW + 1),
             f"one token too few: {read}": window(t, WINDOW - 1),
+            "a token may read itself: the future starts above the diagonal": no_self,
         },
         diagnose=as_scores,
         dtype=np.float32,
@@ -286,7 +295,7 @@ def check_part_c(trace: Trace, weights: dict[str, Array], labels: list[str]) -> 
 
 
 def check_part_d(trace: Trace, labels: list[str], d: int) -> None:
-    """Tasks D2, D3 and star task D1; the largest score once largest_score() works."""
+    """Tasks D2, D3 and the star task merge; the largest score once D3 works."""
     layer = trace.layers[LAYER]
     t, d_h = len(labels), layer.q.shape[-1]
     print("\nPart D: heads as a stack")
@@ -336,7 +345,7 @@ def check_part_d(trace: Trace, labels: list[str], d: int) -> None:
             f"{s[i, j]:.2f}. Token {i}, {labels[i]}, reads token {j}, {labels[j]}, "
             f"{where}"
         )
-    print("\nStar task D1 (optional)")
+    print("\nPart D, star task (optional)")
     checks.check(
         "merge",
         merge,
