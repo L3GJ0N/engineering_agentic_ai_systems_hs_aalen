@@ -4,6 +4,8 @@ The functions you write in an exercise are checked against the forward pass in
 gpt2.py, on two models: always on a tiny GPT-2 with random weights, which needs
 no download, and also on GPT-2 small when its files are already in downloads/.
 Nothing here downloads anything; uv run model-weights does that, once.
+Functions that return whole numbers, such as the strides of an array, are
+checked case by case against what NumPy itself computes (check_cases).
 
 Each check prints one line: True, "not written yet", or False with a hint at
 what differs, such as a transposed matrix, a constant factor, rows that do not
@@ -11,7 +13,8 @@ sum to 1, the wrong dtype, or the largest difference and where it is.
 """
 
 import warnings
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
+from dataclasses import dataclass, field
 
 import numpy as np
 from tokenizers import Tokenizer
@@ -212,3 +215,84 @@ def check(
         hint += ". NumPy warned: " + "; ".join(numpy_said)
     print(label + "False, " + hint)
     return False
+
+
+# --- Case by case ------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class Case:
+    """One call of a function to check: its arguments, the right result, hints.
+
+    expected comes from NumPy itself, never from a formula written here. hint
+    says what is special about this case; mistakes maps a hint to the result
+    that a typical mistake gives in this case.
+    """
+
+    args: tuple[object, ...]
+    expected: object
+    hint: str = ""
+    mistakes: dict[str, object] = field(default_factory=dict)
+
+
+def _equal(result: object, expected: object, close: bool = False) -> bool:
+    """Whether two results hold the same numbers in the same arrangement.
+
+    With close, numbers that differ only in their last digits count as equal.
+    """
+    try:
+        mine, want = np.asarray(result), np.asarray(expected)
+        if close:
+            return mine.shape == want.shape and bool(
+                np.allclose(mine.astype(np.float64), want.astype(np.float64), atol=1e-6)
+            )
+        return bool(np.array_equal(mine, want))
+    except (TypeError, ValueError):
+        return False
+
+
+def check_cases(
+    name: str,
+    function: Callable[..., object],
+    cases: Sequence[Case],
+    close: bool = False,
+) -> bool | None:
+    """Call function on every case and print one line for all of them.
+
+    The line is True when every result equals the expected one, with close up
+    to the rounding of the last digits. Otherwise it shows the first call that
+    differs, what it gave, what was expected, and the hint of the mistake it
+    matches, else the hint of the case. Returns True, False, or None while the
+    function is not written yet.
+    """
+    label = f"    {name + ':':<22}"
+    for case in cases:
+        call = f"{name}({', '.join(repr(arg) for arg in case.args)})"
+        try:
+            result = function(*case.args)
+        except NotImplementedError as error:
+            print(label + _not_written(function, error))
+            return None
+        except Exception as error:  # any error of your code is yours to see
+            hint = f": {case.hint}" if case.hint else ""
+            print(label + f"False, {call} raised {type(error).__name__}: {error}{hint}")
+            return False
+        if result is None:
+            print(
+                label + f"False, {call} returned None: is a return statement missing?"
+            )
+            return False
+        if not _equal(result, case.expected, close):
+            hint = next(
+                (
+                    text
+                    for text, wrong in case.mistakes.items()
+                    if _equal(result, wrong, close)
+                ),
+                case.hint,
+            )
+            shown = f"False, {call} gives {result!r}, not {case.expected!r}"
+            print(label + shown + (f": {hint}" if hint else ""))
+            return False
+    print(label + "True")
+    return True

@@ -16,19 +16,22 @@ uv run model-weights
 
 `uv sync` installs NumPy, Matplotlib, three small Hugging Face libraries and the tools for the checks, about 200 MB. `model-weights` downloads the model and lists what its file holds.
 
-## Three questions
+## Four questions
 
-Run them in this order, and read each file alongside: its comments explain every step.
+Run the first three in this order, and read each file alongside: its comments explain every step. The fourth needs no download.
 
 ```console
 uv run model-weights
 uv run one-head
 uv run attention-sink
+uv run numpy-timings
 ```
 
 1. [model_weights.py](src/eaas_attention_lab/commands/model_weights.py): **where are W_Q, W_K, W_V and W_O?** The model file holds 160 named arrays. W_Q, W_K and W_V of a block sit side by side in one 768 × 2304 matrix, and the four matrices of a block hold exactly 4d² = 2,359,296 weights. The file also holds what diagrams rarely show: biases, LayerNorm, the feed-forward networks with 46 % of all weights, and a stored causal mask. One thing is missing: the output layer has no matrix of its own.
 2. [one_head.py](src/eaas_attention_lab/commands/one_head.py): **one head by hand.** Read the docstring of [gpt2.py](src/eaas_attention_lab/gpt2.py) first: it explains LayerNorm and the residual stream, which attention diagrams usually leave out. The queries, keys and values of head 4 in layer 5 for "the cat sat on it", the scores S, the mask, the weights A and the head's result, each step checked against the whole model. S is not symmetric; dividing by √64 keeps the order within each row but changes the weights; masking after the softmax leaves every row but the last summing to less than 1.
 3. [attention_sink.py](src/eaas_attention_lab/commands/attention_sink.py): **why most heads look at the first token.** In 114 of the 144 heads, " it" puts its largest weight on the first token, and in about as many when a word of the sentence comes first. The first token's value vectors are short, so a head gets little from there: it is a place to put weight when there is nothing to read. The script ends with why this matters for reading attention maps, and for servers with long conversations.
+
+4. [numpy_timings.py](src/eaas_attention_lab/commands/numpy_timings.py): **how fast is NumPy, and why?** The scores of one head, S = Q Kᵀ for 1,024 tokens, computed in nine ways, from three loops in plain Python to one `@` on float32 numbers, which NumPy hands to BLAS: on the laptop it was written on, about 2,000 times apart, with the same numbers. Then one `@` with 1 to all BLAS threads, twelve heads in a loop and as one stack, `exp` in a Python loop and in NumPy, and what a number costs in memory. Random numbers only, about 15 seconds; `--tokens 256` tries another size.
 
 To try another text, layer or head, change `TEXT`, `LAYER` or `HEAD` at the top of a script, save, and run it again.
 
@@ -36,7 +39,9 @@ To try another text, layer or head, change `TEXT`, `LAYER` or `HEAD` at the top 
 
 [One attention head, up close](../exercises/one_head/README.md) is an exercise for 15 to 30 minutes on your own: predict what one head does, explore it, then write parts of it in [my_head.py](src/eaas_attention_lab/exercises/my_head.py). `uv run my-head` checks your code against the forward pass. It needs no download: without GPT-2 small, it runs a tiny GPT-2 with random weights, which has GPT-2 small's 12 layers of 12 heads but knows only 49 words.
 
-[NumPy for the attention lab](../exercises/numpy_for_attention/README.md) teaches the NumPy that `gpt2.py` uses, on the lab's own arrays: in the Python REPL, and in [my_numpy.py](src/eaas_attention_lab/exercises/my_numpy.py), which `uv run my-numpy` checks on the tiny GPT-2. It needs no download either.
+[Inside NumPy](../exercises/numpy_inside/README.md) looks inside NumPy itself: what an array is in memory, its header and strides, views and copies, and why one `@` is so much faster than a loop, with `uv run numpy-timings`. You write seven functions in [my_numpy_inside.py](src/eaas_attention_lab/exercises/my_numpy_inside.py), which `uv run my-numpy-inside` checks against what NumPy computes, and times.
+
+[NumPy for the attention lab](../exercises/numpy_for_attention/README.md) then teaches the NumPy that `gpt2.py` uses, on the lab's own arrays: in the Python REPL, and in [my_numpy.py](src/eaas_attention_lab/exercises/my_numpy.py), which `uv run my-numpy` checks on the tiny GPT-2. Neither needs a download.
 
 ## What you see
 
@@ -57,8 +62,10 @@ src/eaas_attention_lab/
         model_weights.py    uv run model-weights
         one_head.py         uv run one-head
         attention_sink.py   uv run attention-sink
+        numpy_timings.py    uv run numpy-timings
     exercises/              what you complete, one exercise per file
         my_head.py          uv run my-head
+        my_numpy_inside.py  uv run my-numpy-inside
         my_numpy.py         uv run my-numpy
 ```
 
