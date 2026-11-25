@@ -11,7 +11,7 @@ import numpy as np
 import pytest
 
 from eaas_attention_lab import checks, model_files
-from eaas_attention_lab.exercises import my_head
+from eaas_attention_lab.exercises import my_head, my_numpy
 
 
 @pytest.fixture
@@ -80,3 +80,56 @@ def test_a_transposed_result_is_named(capsys: pytest.CaptureFixture[str]) -> Non
     expected = np.arange(9.0).reshape(3, 3)
     assert checks.check("f", lambda: expected.T, expected=expected) is False
     assert "yours is the transpose" in capsys.readouterr().out
+
+
+def test_the_right_numbers_in_another_dtype_are_named(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    expected = np.arange(4.0, dtype=np.float32)
+    result = checks.check(
+        "f",
+        lambda: expected.astype(np.float64),
+        expected=expected,
+        dtype=np.float32,
+        if_dtype="make it float32",
+    )
+    assert result is False
+    assert "its dtype is float64, not float32: make it float32" in (
+        capsys.readouterr().out
+    )
+
+
+def test_an_error_and_a_wrong_shape_get_their_hints(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    def broken() -> object:
+        raise ValueError("matmul: Input operand 1 has a mismatch in its core dimension")
+
+    hints = {"core dimension": "swap the last two axes"}
+    assert checks.check("f", broken, expected=EVEN, if_raised=hints) is False
+    assert "core dimension. swap the last two axes" in capsys.readouterr().out
+    assert checks.check("f", lambda: 7, expected=np.ones(2), if_shape="two") is False
+    assert "its shape is (), expected (2,): two" in capsys.readouterr().out
+
+
+def test_my_numpy_runs_on_the_tiny_model_without_downloading(
+    no_gpt2: None, capsys: pytest.CaptureFixture[str]
+) -> None:
+    my_numpy.main()
+    output = capsys.readouterr().out
+    assert "The tiny GPT-2 with random weights" in output
+    lines = [line.strip() for line in output.splitlines() if line[:4] == "    "]
+    verdicts = dict(line.split(":", 1) for line in lines)
+    # The given function holds the mistake of task A3; every other one is a stub.
+    assert (
+        verdicts.pop("scaled_scores")
+        .strip()
+        .startswith("False, the numbers are right, but its dtype is float64")
+    )
+    assert [verdict.strip() for verdict in verdicts.values()] == ["not written yet"] * 7
+
+
+def test_tiny_trace_gives_the_stacks_of_the_task_sheet() -> None:
+    trace = my_numpy.tiny_trace("the cat sat on it")
+    assert trace.attention.shape == (12, 12, 6, 6)
+    assert trace.layers[5].q.dtype == np.float32
