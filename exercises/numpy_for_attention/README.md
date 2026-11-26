@@ -2,7 +2,7 @@
 
 `attention_lab` computes GPT-2 in about 100 lines of NumPy, in [gpt2.py](../../attention_lab/src/eaas_attention_lab/gpt2.py). This exercise teaches the NumPy those lines use, on the lab's own arrays. Afterwards you can read every line of `gpt2.py` and of the three commands, and solve tasks 3, 4 and 6 of [one_head](../one_head/README.md) on your own.
 
-Do [Inside NumPy](../numpy_inside/README.md) first: it shows what an array is and why NumPy is fast; this exercise applies it to GPT-2.
+Do [NumPy basics](../numpy_basics/README.md) first: arrays and their shapes, `keepdims`, and NumPy's timings; this exercise applies them to GPT-2. [Inside NumPy](../numpy_inside/README.md), an optional deep dive, shows what an array is in memory and why NumPy is fast.
 
 You work alone. Parts A to D follow the four rounds of Part II of the session on 26 November, slides 24 to 35. Most need 50 to 70 minutes: finish them at home. Part E, reading `gpt2.py`, takes about 20 to 30 minutes more. Tasks marked ★ are optional. Everything runs on the tiny GPT-2 with random weights, on your laptop's CPU, without any download.
 
@@ -571,7 +571,7 @@ min(timeit.repeat(lambda: q @ k.T, number=1, repeat=20))
 <details>
 <summary>Check your reasoning</summary>
 
-The loop runs a Python step for each of the 1024 × 1024 pairs; `@` hands the whole product to a compiled library, BLAS, which can use several cores (`np.show_config()` names the one your NumPy uses). The first `@` also has to start BLAS, so the last line takes the fastest of 20 runs, as slide 2 did. Your numbers differ from the slide with the laptop and its power settings, but the loop stays slower by about three orders of magnitude. Time `q @ k.T`, not `q @ q.T`: for a matrix times its own transpose NumPy calls another routine, which took about three times as long on our laptop (part E of Inside NumPy). `uv run numpy-timings` measures this loop, one `@` and seven ways in between. Your REPL imported NumPy before the lab, so OpenBLAS uses one thread per logical CPU there, not the lab's 4 (Inside NumPy, E3).
+The loop runs a Python step for each of the 1024 × 1024 pairs; `@` hands the whole product to a compiled library, BLAS, which can use several cores (`np.show_config()` names the one your NumPy uses). The first `@` also has to start BLAS, so the last line takes the fastest of 20 runs; slide 2 took the fastest of several. Your numbers differ from the slide with the laptop and its power settings, but the loop stays slower by about three orders of magnitude. Time `q @ k.T`, not `q @ q.T`: for a matrix times its own transpose NumPy calls another routine, which took about three times as long on our laptop (part E of Inside NumPy). `uv run numpy-timings` measures this loop, one `@` and seven ways in between. Your REPL imported NumPy before the lab, so OpenBLAS uses one thread per logical CPU there, not the lab's 4 (Inside NumPy, E3).
 
 </details>
 

@@ -247,7 +247,7 @@ def check_part_c(trace: Trace, weights: dict[str, Array], labels: list[str]) -> 
             "token's row, along the last axis (axis=-1)": whole
         },
         diagnose=diagnose,
-        if_nan="row 2 has the same number everywhere, so its variance is 0: add eps to "
+        if_nan="Row 2 has the same number everywhere, so its variance is 0: add eps to "
         "the variance before the square root",
         if_raised={
             "could not be broadcast": "keep the reduced axis with keepdims=True, in "
