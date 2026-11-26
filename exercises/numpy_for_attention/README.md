@@ -2,7 +2,9 @@
 
 `attention_lab` computes GPT-2 in about 100 lines of NumPy, in [gpt2.py](../../attention_lab/src/eaas_attention_lab/gpt2.py). This exercise teaches the NumPy those lines use, on the lab's own arrays. Afterwards you can read every line of `gpt2.py` and of the three commands, and solve tasks 3, 4 and 6 of [one_head](../one_head/README.md) on your own.
 
-You work alone. Parts A to D follow the four rounds of the session on 26 November; there you work on them in the second half, after all four rounds, for about 45 minutes. Most need 50 to 70 minutes: finish them at home. Part E, reading `gpt2.py`, takes about 20 to 30 minutes more. Tasks marked ★ are optional. Everything runs on the tiny GPT-2 with random weights, on your laptop's CPU, without any download.
+Do [Inside NumPy](../numpy_inside/README.md) first: it shows what an array is and why NumPy is fast; this exercise applies it to GPT-2.
+
+You work alone. Parts A to D follow the four rounds of Part II of the session on 26 November, slides 24 to 35. Most need 50 to 70 minutes: finish them at home. Part E, reading `gpt2.py`, takes about 20 to 30 minutes more. Tasks marked ★ are optional. Everything runs on the tiny GPT-2 with random weights, on your laptop's CPU, without any download.
 
 All you change is one file: [my_numpy.py](../../attention_lab/src/eaas_attention_lab/exercises/my_numpy.py) in `attention_lab`. Everything else happens in the Python REPL.
 
@@ -21,7 +23,7 @@ All you change is one file: [my_numpy.py](../../attention_lab/src/eaas_attention
 
   `trace` holds everything the tiny GPT-2 computed for "the cat sat on it" with `<|endoftext|>` in front, 6 tokens; `layer` is block 5 of its 12 blocks. The tasks of parts A and B continue in this REPL.
 - **The checks.** `uv run my-numpy` checks the functions in `my_numpy.py` and prints one line for each: `True`, `not written yet`, or `False` with a hint at what to change.
-- **The boxes.** Each task ends with a closed box, **Check your reasoning**. Open it after you tried. Its REPL sessions are real runs. Your REPL writes in front of a warning where it came from, such as `<python-input-3>:1:`; the boxes leave that out.
+- **The boxes.** Each task ends with a closed box, **Check your reasoning**. Open it after you tried. Its REPL sessions are real runs. Your REPL writes in front of a warning where it came from, such as `<python-input-3>:1:`; the boxes leave that out. The boxes stay closed only where the sheet is shown as a page: on GitHub, or in VS Code's preview, Ctrl+Shift+V (Cmd+Shift+V on a Mac). In the editor, every box is open.
 
 Write the code yourself: a coding agent or chatbot that writes these few lines takes the point away. Asking one for an explanation is fine.
 
@@ -252,7 +254,7 @@ True
 
 ### B2. Look up the tokens: `embed()`
 
-`forward()` in `gpt2.py` starts with the input of the first block: each token's row of the embedding table, `weights["wte.weight"]`, [V, d], plus the row of the position table, `weights["wpe.weight"]`, for its position, 0 for the first token, 1 for the second. Write `embed(weights, ids)` in `my_numpy.py` without looking at `forward()`, and without a loop; slide 8 shows how a list of indices picks rows. To try it in the REPL:
+`forward()` in `gpt2.py` starts with the input of the first block: each token's row of the embedding table, `weights["wte.weight"]`, [V, d], plus the row of the position table, `weights["wpe.weight"]`, for its position, 0 for the first token, 1 for the second. Write `embed(weights, ids)` in `my_numpy.py` without looking at `forward()`, and without a loop; slide 27 shows how a list of indices picks rows. To try it in the REPL:
 
 <!-- input: b2 -->
 ```python
@@ -559,15 +561,17 @@ How much faster is one `@` than a Python loop? Time both on your laptop, with th
 
 ```python
 import time, timeit
-q = np.random.default_rng(0).standard_normal((1024, 64)).astype(np.float32)
-start = time.perf_counter(); loop = [[q[i] @ q[j] for j in range(1024)] for i in range(1024)]; time.perf_counter() - start
-min(timeit.repeat(lambda: q @ q.T, number=1, repeat=20))
+rng = np.random.default_rng(0)
+q = rng.standard_normal((1024, 64)).astype(np.float32)
+k = rng.standard_normal((1024, 64)).astype(np.float32)
+start = time.perf_counter(); loop = [[q[i] @ k[j] for j in range(1024)] for i in range(1024)]; time.perf_counter() - start
+min(timeit.repeat(lambda: q @ k.T, number=1, repeat=20))
 ```
 
 <details>
 <summary>Check your reasoning</summary>
 
-The loop runs a Python step for each of the 1024 × 1024 pairs; `@` hands the whole product to a compiled library, BLAS, which can use several cores (`np.show_config()` names the one your NumPy uses). The first `@` also has to start BLAS, so the last line takes the fastest of 20 runs, as slide 2 did. Your numbers differ from the slide with the laptop and its power settings, but the loop stays slower by two to three orders of magnitude.
+The loop runs a Python step for each of the 1024 × 1024 pairs; `@` hands the whole product to a compiled library, BLAS, which can use several cores (`np.show_config()` names the one your NumPy uses). The first `@` also has to start BLAS, so the last line takes the fastest of 20 runs, as slide 2 did. Your numbers differ from the slide with the laptop and its power settings, but the loop stays slower by about three orders of magnitude. Time `q @ k.T`, not `q @ q.T`: for a matrix times its own transpose NumPy calls another routine, which took about three times as long on our laptop (part E of Inside NumPy). `uv run numpy-timings` measures this loop, one `@` and seven ways in between. Your REPL imported NumPy before the lab, so OpenBLAS uses one thread per logical CPU there, not the lab's 4 (Inside NumPy, E3).
 
 </details>
 

@@ -16,8 +16,12 @@ dependencies = [
 model-weights = "eaas_attention_lab.commands.model_weights:main"
 one-head = "eaas_attention_lab.commands.one_head:main"
 attention-sink = "eaas_attention_lab.commands.attention_sink:main"
+# One head's scores computed nine ways, from plain Python to BLAS, and timed.
+numpy-timings = "eaas_attention_lab.commands.numpy_timings:main"
 # The exercise of exercises/one_head: your code, checked.
 my-head = "eaas_attention_lab.exercises.my_head:main"
+# The exercise of exercises/numpy_inside: your functions, checked and timed.
+my-numpy-inside = "eaas_attention_lab.exercises.my_numpy_inside:main"
 # The exercise of exercises/numpy_for_attention: your NumPy, checked.
 my-numpy = "eaas_attention_lab.exercises.my_numpy:main"
 
