@@ -71,3 +71,19 @@ def test_times_have_three_digits_and_a_unit(seconds: float, shown: str) -> None:
 
 def test_gpt2_small_has_the_weights_that_model_weights_counts() -> None:
     assert numpy_timings.gpt2_small_weights() == 124_439_808
+
+
+@pytest.mark.parametrize(
+    ("argv", "says"),
+    [
+        (["--tokens", "0"], "not a whole number of at least 1: 0"),
+        (["--tokens", "5000"], "--tokens takes 1 to 4096"),
+        (["--threads", "1,x"], "invalid thread_counts value"),
+    ],
+)
+def test_bad_sizes_get_a_usage_message_not_a_traceback(
+    argv: list[str], says: str, capsys: pytest.CaptureFixture[str]
+) -> None:
+    with pytest.raises(SystemExit):
+        numpy_timings.main(argv)
+    assert says in capsys.readouterr().err

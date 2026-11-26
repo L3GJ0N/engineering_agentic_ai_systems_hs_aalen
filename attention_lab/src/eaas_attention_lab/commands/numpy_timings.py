@@ -12,15 +12,16 @@ memory as a Python float and in an array.
 
 Every way gets the same random numbers, and every result is compared with
 the exact product: the column "Same" says True when they agree up to the
-rounding of float32. Each time is the fastest of several runs. Other programs
-and the power settings of your laptop change the times; the order of
-magnitude stays.
+rounding of float32. Each time is the fastest of several runs; a way that takes
+longer than a second runs once. Other programs and the power settings of your
+laptop change the times; the order of magnitude stays.
 
 Offline, random numbers only, no download. It takes about 15 seconds.
 
 Setup: uv sync
 Run from the project root: uv run numpy-timings
 Other sizes for the nine ways and the threads: uv run numpy-timings --tokens 256
+(1 to 4096 tokens; 4096 takes about a minute and 1.5 GB of memory)
 Read next: exercises/numpy_inside/README.md, part E
 """
 
@@ -53,6 +54,7 @@ FEW_TOKENS: int = 9  # a short text, as in the checks of the exercises
 BUDGET: float = 1.0  # seconds per way: as many runs as fit, the fastest counts
 MOST_RUNS: int = 30
 MOST_BYTES: float = 1e9  # the largest array a way may build: 1 GB
+MOST_TOKENS: int = 4096  # plain Python grows with T x T: 4096 takes about 30 s
 SEED: int = 0
 
 # GPT-2 small: the width d, the blocks, the vocabulary and the positions.
@@ -67,8 +69,8 @@ def fastest(run: Callable[[], object]) -> tuple[float, object]:
     """The fastest of as many runs as fit into BUDGET seconds, and the last result.
 
     A run that takes longer than BUDGET runs once. The first run of a fast one
-    also starts what it needs, such as the BLAS threads, so it is rarely the
-    fastest.
+    also pays for warming up, such as waking the BLAS threads, so it is rarely
+    the fastest.
     """
     times: list[float] = []
     result: object = None
@@ -126,7 +128,7 @@ def python_loops(q: Matrix, k: Matrix) -> Callable[[], object]:
 
 
 def numpy_pairs(q: Matrix, k: Matrix) -> Callable[[], object]:
-    """A Python loop over all pairs (i, j); NumPy computes one dot product each."""
+    """A Python loop over all pairs (i, j); NumPy hands each dot product to BLAS."""
     t = len(q)
 
     def run() -> Matrix:
@@ -140,7 +142,7 @@ def numpy_pairs(q: Matrix, k: Matrix) -> Callable[[], object]:
 
 
 def numpy_rows(q: Matrix, k: Matrix) -> Callable[[], object]:
-    """A Python loop over the rows: NumPy computes one row of S each, q_i K^T."""
+    """A Python loop over the rows: NumPy hands each row of S, q_i K^T, to BLAS."""
     t = len(q)
 
     def run() -> Matrix:
@@ -166,7 +168,11 @@ def numpy_outer(q: Matrix, k: Matrix) -> Callable[[], object]:
 
 
 def broadcasting(q: Matrix, k: Matrix) -> Callable[[], object]:
-    """No loop: every product at once in a [T, T, d_h] array, then its sum."""
+    """No loop: every product at once in a [T, T, d_h] array, then its sum.
+
+    q[:, np.newaxis, :] is [T, 1, d_h] and k[np.newaxis, :, :] is [1, T, d_h]:
+    the axes of length 1 stretch, so that row i of q meets every row of k.
+    """
     return lambda: (q[:, np.newaxis, :] * k[np.newaxis, :, :]).sum(axis=-1)
 
 
@@ -176,7 +182,7 @@ def einsum(q: Matrix, k: Matrix) -> Callable[[], object]:
 
 
 def matmul_int32(q: Matrix, k: Matrix) -> Callable[[], object]:
-    """One @ on whole numbers, q and k rounded: NumPy's own loops, no BLAS."""
+    """One @ on whole numbers, 10 q and 10 k rounded: NumPy's own loops, no BLAS."""
     q_int = np.round(10 * q).astype(np.int32)
     k_int = np.round(10 * k).astype(np.int32)
     return lambda: q_int @ k_int.T
@@ -372,26 +378,46 @@ def header() -> None:
     )
 
 
+def at_least_one(text: str) -> int:
+    """A whole number of at least 1, for --tokens and each count of --threads."""
+    number = int(text)  # argparse reports a ValueError as an invalid value
+    if number < 1:
+        raise argparse.ArgumentTypeError(f"not a whole number of at least 1: {text}")
+    return number
+
+
+def thread_counts(text: str) -> list[int]:
+    """The counts of --threads, such as 1,4."""
+    return [at_least_one(n) for n in text.split(",") if n.strip()]
+
+
 def main(argv: Sequence[str] | None = None) -> None:
     """Time the nine ways, then threads, heads, exp and memory."""
     parser = argparse.ArgumentParser(description=(__doc__ or "").split("\n")[0])
     parser.add_argument(
         "--tokens",
-        type=int,
+        type=at_least_one,
         default=TOKENS,
-        help="T of the nine ways and of the threads, default 1024; the heads and exp "
-        "keep 1024. Plain Python takes about 2 s for 1024 and 30 s for 4096",
+        help="T of the nine ways and of the threads, 1 to 4096, default 1024; the "
+        "heads and exp keep 1024. Plain Python takes about 2 s for 1024, and 30 s "
+        "and 1.5 GB of memory for 4096",
     )
     parser.add_argument(
         "--threads",
-        default="",
+        type=thread_counts,
+        default=[],
         help="BLAS thread counts to try, such as 1,4; default 1, 2, 4, 8 and all",
     )
     parser.add_argument("--one-product", type=int, help=argparse.SUPPRESS)
     args = parser.parse_args(argv)
-    if args.one_product:  # the run of threads() in a fresh Python
+    if args.one_product is not None:  # the run of threads() in a fresh Python
         print(one_product(args.one_product))
         return
+    if args.tokens > MOST_TOKENS:
+        parser.error(
+            f"--tokens takes 1 to {MOST_TOKENS}, not {args.tokens}: time and memory "
+            "grow with T x T"
+        )
     show.utf8_output()
     header()
     t = args.tokens
@@ -404,9 +430,7 @@ def main(argv: Sequence[str] | None = None) -> None:
     )
     nine_ways(q, k)
     cpus = os.cpu_count() or 1
-    counts = [int(n) for n in args.threads.split(",") if n.strip()] or sorted(
-        {n for n in (1, 2, 4, 8, cpus) if n <= cpus}
-    )
+    counts = args.threads or sorted({n for n in (1, 2, 4, 8, cpus) if n <= cpus})
     threads(t, counts)
     heads(TOKENS)
     element_wise(TOKENS)

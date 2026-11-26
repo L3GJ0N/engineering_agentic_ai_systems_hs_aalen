@@ -154,7 +154,7 @@ def test_the_cases_of_my_numpy_inside_come_from_numpy() -> None:
     assert strides[0].args == ((2, 3), 8)
     assert strides[0].expected == (24, 8)
     offsets = my_numpy_inside.byte_offset_cases()
-    assert [case.expected for case in offsets] == [40, 428, 2892, -28, 44]
+    assert [case.expected for case in offsets] == [40, 428, 652, -28, 44]
     window = my_numpy_inside.is_contiguous_cases()[-1]
     assert window.args == ((4, 1, 3), (12, 0, 4), 4)
     assert window.expected is True

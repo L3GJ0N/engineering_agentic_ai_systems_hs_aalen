@@ -2,7 +2,7 @@
 
 NumPy is the library behind `gpt2.py`: one type, the n-dimensional array, written in C, and the functions around it. This exercise looks inside it. What an array is in memory, how its header reads its block of numbers, which lines copy and which do not, and why one `@` is a thousand times faster than a Python loop, measured on your laptop. Afterwards you can say what NumPy does for every line you write, and why it is fast or slow. The exercise [NumPy for the attention lab](../numpy_for_attention/README.md) then applies all of it to GPT-2; do this one first.
 
-You work alone. Six parts, A to F, take about 100 to 120 minutes in all; finish at home what the session leaves. Tasks marked ★ are optional. Everything runs on your laptop's CPU, with random numbers and without any download.
+You work alone. Six parts, A to F, take about 110 to 140 minutes in all without the ★ tasks, which add about half an hour; finish at home what the session leaves. Tasks marked ★ are optional. Everything runs on your laptop's CPU, with random numbers and without any download.
 
 All you change is one file: [my_numpy_inside.py](../../attention_lab/src/eaas_attention_lab/exercises/my_numpy_inside.py) in `attention_lab`. Everything else happens in the Python REPL and in the terminal.
 
@@ -12,7 +12,7 @@ All you change is one file: [my_numpy_inside.py](../../attention_lab/src/eaas_at
 - **The REPL.** In a terminal in `attention_lab`, `uv run python` starts Python with NumPy and the lab; `>>>` is its prompt. Type one line, press Enter, and Python prints the result. `exit()` ends it. Every REPL starts empty: type `import numpy as np` first. Each task gives all the other lines it needs.
 - **The checks.** `uv run my-numpy-inside` checks the functions in `my_numpy_inside.py` and prints one line for each: `True`, `not written yet`, or `False` with a hint at what to change. The checks compare your results with what NumPy itself computes. Once a function of part D works, the run also times it.
 - **The timings.** `uv run numpy-timings` computes the scores of one attention head in nine ways and times each on your laptop; part E reads its table.
-- **The boxes.** Each task ends with a closed box, **Check your reasoning**. Open it after you tried. Its REPL sessions are real runs, with NumPy 2.5.4 and Python 3.13.
+- **The boxes.** Each task ends with a closed box, **Check your reasoning**. Open it after you tried. Its REPL sessions are real runs, with NumPy 2.5.4 and Python 3.13. The boxes stay closed only where the sheet is shown as a page: on GitHub, or in VS Code's preview, Ctrl+Shift+V (Cmd+Shift+V on a Mac). In the editor, every box is open.
 
 Write the code yourself: a coding agent or chatbot that writes these few lines takes the point away. Asking one for an explanation is fine.
 
@@ -31,7 +31,7 @@ The first run checks eight functions, and all eight say `not written yet`: seven
 
 ## Part A: an array is a header and a block
 
-About 20 to 25 minutes.
+About 15 to 25 minutes.
 
 A NumPy array is an object of the class `numpy.ndarray`, written in C. It holds its numbers side by side in one block of memory, all of one type, the dtype, and a small header that says how to read the block: the number of axes (`ndim`), the length of each axis (`shape`), the dtype, and the strides, the number of bytes from one number to the next along each axis.
 
@@ -75,7 +75,7 @@ TypeError: 'tuple' object is not callable
 
 ### A2. GPT-2's tables
 
-The checks of the lab use a tiny GPT-2 with random weights: the layout of GPT-2 small, 12 blocks with 12 heads, but 48 numbers per token instead of 768, and 50 vocabulary entries instead of 50,257. Its weights are a dict of arrays, with the names of GPT-2 small's file. Predict, then run:
+The checks of the lab use a tiny GPT-2 with random weights: the layout of GPT-2 small, 12 blocks with 12 heads, but 48 numbers per token instead of 768, 50 vocabulary entries instead of 50,257, and 32 positions instead of 1,024. Its weights are a dict of arrays, with the names of GPT-2 small's file. Predict, then run:
 
 <!-- input: a2 -->
 ```python
@@ -108,7 +108,7 @@ After the run: how many bytes does the embedding table of GPT-2 small take, [502
 154389504
 ```
 
-One row per vocabulary entry, 48 numbers of 4 bytes each: the next row starts 192 bytes further, the next number 4 bytes. The table takes 50 × 192 = 9,600 bytes, and all weights of the tiny model together about 1.4 MB. GPT-2 small's table, [50257, 768], has the strides (3072, 4) and takes 154,389,504 bytes, about 154 MB; all 124,439,808 weights of GPT-2 small take about 498 MB in float32. `nbytes` counts the numbers in the block only, not the header.
+One row per vocabulary entry, 48 numbers of 4 bytes each: the next row starts 192 bytes further, the next number 4 bytes. The table takes 50 × 192 = 9,600 bytes, and all weights of the tiny model together 1,373,184 bytes, about 1.4 MB. GPT-2 small's table, [50257, 768], has the strides (3072, 4) and takes 154,389,504 bytes, about 154 MB; all 124,439,808 weights of GPT-2 small take about 498 MB in float32. `nbytes` counts the numbers in the block only, not the header.
 
 </details>
 
@@ -147,6 +147,10 @@ tracemalloc.start()
 floats = [float(i) for i in range(1_000_000)]
 tracemalloc.get_traced_memory()[0] // 1_000_000
 tracemalloc.stop()
+tracemalloc.start()
+halves = [0.5] * 1_000_000
+tracemalloc.get_traced_memory()[0] // 1_000_000
+tracemalloc.stop()
 np.zeros(1_000_000, dtype=np.float32).nbytes // 1_000_000
 [1.0, 2.0] + [3.0, 4.0], np.array([1.0, 2.0]) + np.array([3.0, 4.0])
 ```
@@ -166,13 +170,18 @@ np.zeros(1_000_000, dtype=np.float32).nbytes // 1_000_000
 >>> tracemalloc.get_traced_memory()[0] // 1_000_000
 32
 >>> tracemalloc.stop()
+>>> tracemalloc.start()
+>>> halves = [0.5] * 1_000_000
+>>> tracemalloc.get_traced_memory()[0] // 1_000_000
+8
+>>> tracemalloc.stop()
 >>> np.zeros(1_000_000, dtype=np.float32).nbytes // 1_000_000
 4
 >>> [1.0, 2.0] + [3.0, 4.0], np.array([1.0, 2.0]) + np.array([3.0, 4.0])
 ([1.0, 2.0, 3.0, 4.0], array([4., 6.]))
 ```
 
-A Python float is an object of its own: 8 bytes of reference count, 8 bytes for a pointer to its type, 8 bytes for the number. A list holds one pointer of 8 bytes per element, so a list of a million floats takes about 32 bytes per number, as `tracemalloc` counts what Python asks for; the allocator rounds each float up to 32 bytes, so the real cost is higher still. A float32 array takes 4 bytes per number, side by side. GPT-2 small's 124,439,808 weights would take at least 4 GB as a list of floats instead of 498 MB. And `+` means something else: it joins two lists, but adds two arrays number by number.
+A Python float is an object of its own: 8 bytes of reference count, 8 bytes for a pointer to its type, 8 bytes for the number. A list holds one pointer of 8 bytes per element, so a list of a million floats takes about 32 bytes per number, as `tracemalloc` counts what Python asks for; the allocator rounds each float up to 32 bytes, so the real cost is higher still. A list of a million times the same float takes only 8 bytes per element: one float object, and a million pointers to it. A float32 array takes 4 bytes per number, side by side. GPT-2 small's 124,439,808 weights would take at least 4 GB as a list of floats instead of 498 MB. And `+` means something else: it joins two lists, but adds two arrays number by number.
 
 </details>
 
@@ -247,7 +256,7 @@ rng = np.random.default_rng(42)
 rng.normal(size=3)
 rng.normal(size=3)
 np.random.default_rng(42).normal(size=3)
-rng.normal(0.0, 0.02, size=(2, 3)).astype(np.float32)
+rng.standard_normal((2, 3)) * 0.02
 ```
 
 <details>
@@ -262,12 +271,12 @@ array([ 0.30471708, -1.03998411,  0.7504512 ])
 array([ 0.94056472, -1.95103519, -1.30217951])
 >>> np.random.default_rng(42).normal(size=3)
 array([ 0.30471708, -1.03998411,  0.7504512 ])
->>> rng.normal(0.0, 0.02, size=(2, 3)).astype(np.float32)
+>>> rng.standard_normal((2, 3)) * 0.02
 array([[ 0.00255681, -0.00632485, -0.00033602],
-       [-0.01706088,  0.01758796,  0.01555584]], dtype=float32)
+       [-0.01706088,  0.01758796,  0.01555584]])
 ```
 
-A generator made from a seed draws a fixed sequence: every call continues it, so the second line differs from the first, and a new generator with the same seed starts the sequence again. `normal(0.0, 0.02, size=...)` draws with mean 0 and standard deviation 0.02, the spread GPT-2's configuration gives for its initial weights (`"initializer_range": 0.02`), and `.astype(np.float32)` makes float32 numbers of them.
+A generator made from a seed draws a fixed sequence: every call continues it, so the second line differs from the first, and a new generator with the same seed starts the sequence again. `standard_normal` draws with mean 0 and standard deviation 1; times 0.02, the spread is 0.02, the one GPT-2's configuration gives for its initial weights (`"initializer_range": 0.02`). `normal(loc, scale, size)` draws with another mean and spread directly. Both give float64 numbers.
 
 </details>
 
@@ -284,7 +293,7 @@ One generator, made from `seed` inside the function, and three draws from it: ea
 
 ## Part C: views
 
-About 20 minutes.
+About 20 to 25 minutes.
 
 A slice, a transpose and most reshapes write a new header and keep the block: the result is a view, which shows the same numbers in another way. `np.shares_memory(x, y)` says whether two arrays use the same bytes, and `x.base` is the array whose block a view uses.
 
@@ -297,11 +306,11 @@ Predict `True` or `False` for each line, then run:
 a = np.arange(12, dtype=np.float32).reshape(3, 4)
 np.shares_memory(a, a[1])
 np.shares_memory(a, a[:, 1:3])
-np.shares_memory(a, a.T)
+np.shares_memory(a, a.ravel())
 np.shares_memory(a, a.reshape(4, 3))
 np.shares_memory(a, a[[0, 2]])
 np.shares_memory(a, a[a > 5])
-np.shares_memory(a, a.T.reshape(12))
+np.shares_memory(a, a.T.ravel())
 np.shares_memory(a, a.copy())
 a.T.flags["C_CONTIGUOUS"], a.T.flags["F_CONTIGUOUS"]
 ```
@@ -316,7 +325,7 @@ a.T.flags["C_CONTIGUOUS"], a.T.flags["F_CONTIGUOUS"]
 True
 >>> np.shares_memory(a, a[:, 1:3])
 True
->>> np.shares_memory(a, a.T)
+>>> np.shares_memory(a, a.ravel())
 True
 >>> np.shares_memory(a, a.reshape(4, 3))
 True
@@ -324,7 +333,7 @@ True
 False
 >>> np.shares_memory(a, a[a > 5])
 False
->>> np.shares_memory(a, a.T.reshape(12))
+>>> np.shares_memory(a, a.T.ravel())
 False
 >>> np.shares_memory(a, a.copy())
 False
@@ -332,7 +341,7 @@ False
 (False, True)
 ```
 
-A row, a slice, a transpose and the reshape of a new array are views: each needs only another start, other lengths or other strides. A list of indices and a boolean mask pick numbers that no single stride per axis can reach, so NumPy copies them into a new block. `a.T.reshape(12)` must read the numbers column by column, 0, 4, 8, 1, ..., and no stride can do that over a block that lies row by row: this `reshape` copies. Whether a reshape copies depends on how the numbers lie, which the flags show: `a.T` reads its block column by column, Fortran order, not row by row, C order.
+A row, a slice, and the reshape and `ravel` of a new array are views: each needs only another start, other lengths or other strides. A list of indices and a boolean mask pick numbers that no single stride per axis can reach, so NumPy copies them into a new block. `a.T.ravel()` must read the numbers column by column, 0, 4, 8, 1, ..., and no stride can do that over a block that lies row by row: it copies. Whether a `reshape` or `ravel` copies depends on how the numbers lie, which the flags show: `a.T` reads its block column by column, Fortran order, not row by row, C order.
 
 </details>
 
@@ -383,7 +392,7 @@ array([[7., 7., 7.],
 <details>
 <summary>Check your reasoning</summary>
 
-Shape and strides are reordered the same way: each axis keeps its length and its stride, only their order changes. For split_heads, (6, 12, 4) with the strides (576, 16, 4) and the axes (1, 0, 2) give (12, 6, 4) with (16, 576, 4): head h starts h × 16 bytes into each row of the block, and its next row is 576 bytes further. No number moves, so a transpose costs the same for 6 tokens as for 6,000.
+Shape and strides are reordered the same way: each axis keeps its length and its stride, only their order changes. For split_heads of a new block of 6 tokens, (6, 12, 4) with the strides (192, 16, 4) and the axes (1, 0, 2) give (12, 6, 4) with (16, 192, 4): head h starts h × 16 bytes into each row of the block, and its next row is 192 bytes further. No number moves, so a transpose costs the same for 6 tokens as for 6,000.
 
 </details>
 
@@ -435,7 +444,7 @@ A view is a header with its own start: `a[1:]` starts one row, 16 bytes, later; 
 
 ## Part D: element-wise or matrix product
 
-About 20 minutes.
+About 15 to 25 minutes.
 
 ### D1. `*` or `@`?
 
@@ -474,14 +483,14 @@ np.float64(11.0)
 >>> np.ones((2, 3)) @ np.ones((2, 3))
 Traceback (most recent call last):
   ...
-ValueError: matmul: Input operand 1 has a mismatch in its core dimension 0, with gufunc signature (n?,k),(k,m?)->(n?,m?) (size 2 is different from 3)
+ValueError: matmul: Input operand 1 has a mismatch in its core dimension 0, …
 >>> np.ones((2, 3)) * np.ones((3, 2))
 Traceback (most recent call last):
   ...
 ValueError: operands could not be broadcast together with shapes (2,3) (3,2)
 ```
 
-`x * x` squares each number; `x @ x` combines rows with columns. A 1-D array on the left of `@` acts as a row, on the right as a column, and two 1-D arrays give their dot product, one number. Read an error from the end of its last line: `@` needs the last axis of the left operand to match the first axis of the right one (`size 2 is different from 3`), and `*` needs shapes that broadcast, which (2, 3) and (3, 2) do not.
+The matmul message ends with `(size 2 is different from 3)`. `x * x` squares each number; `x @ x` combines rows with columns. A 1-D array on the left of `@` acts as a row, on the right as a column, and two 1-D arrays give their dot product, one number. Read an error from the end of its last line: `@` needs the last axis of the left operand to match the first axis of the right one (`size 2 is different from 3`), and `*` needs shapes that broadcast, which (2, 3) and (3, 2) do not.
 
 </details>
 
@@ -503,7 +512,7 @@ S = Q Kᵀ can be built one column at a time: column j of S holds every query's 
 <details>
 <summary>Check your reasoning</summary>
 
-First a float32 array for S, then for each key j its column: the product of the whole query matrix with that one key, [T, d_h] times [d_h], is a vector of T scores, written into column j. Columns and rows take the same number of steps, 1,024, and the same multiplications, yet on our laptop the columns took nearly twice as long. A row of S lies side by side in memory; a column of S is spread over T rows, 4 KB apart, so writing it touches a different stretch of memory for every number. Into an array that lies column by column, made with `order="F"` (A3 calls this Fortran order), the same loop is as fast as the rows: try it.
+First a float32 array for S, then for each key j its column: the product of the whole query matrix with that one key, [T, d_h] times [d_h], is a vector of T scores, written into column j. Columns and rows take the same number of steps, 1,024, and the same multiplications, yet on our laptop the columns took nearly twice as long. A row of S lies side by side in memory; a column of S is spread over T rows, 4,096 bytes apart, so writing it touches a different stretch of memory for every number. Into an array that lies column by column, made with `order="F"` (C1's box calls this Fortran order), the same loop is as fast as the rows: try it.
 
 </details>
 
@@ -520,11 +529,11 @@ Find the row's largest score, take exp of each score minus it, and divide each o
 
 ## Part E: fast and slow
 
-About 15 to 20 minutes.
+About 20 to 25 minutes.
 
 ### E1. Predict, then measure
 
-`uv run numpy-timings` computes the scores of one head, S = Q Kᵀ for T = 1024 tokens and d_h = 64, in nine ways, from three loops in plain Python to one `@` on float32, the way `gpt2.py` does it. Read the nine ways in [numpy_timings.py](../../attention_lab/src/eaas_attention_lab/commands/numpy_timings.py). Then, before you run it, rank them from fastest to slowest and guess how many times slower than one `@` the slowest is. Then run it in the terminal, not in the REPL; it takes about 15 seconds:
+`uv run numpy-timings` computes the scores of one head, S = Q Kᵀ for T = 1024 tokens and d_h = 64, in nine ways, from three loops in plain Python to one `@` on float32, the way `gpt2.py` does it. Read the nine ways in [numpy_timings.py](../../attention_lab/src/eaas_attention_lab/commands/numpy_timings.py). Slide 17 showed our laptop's table. Before you run it, predict which rows will come out differently on yours, and why: another processor, another BLAS, more or fewer cores. Then run it in the terminal, not in the REPL; it takes about 15 seconds:
 
 ```console
 uv run numpy-timings
@@ -555,7 +564,7 @@ Your numbers differ with your laptop, its power settings and what else runs; the
 
 ### E2. Read the table
 
-Answer these questions from the table, then open the box:
+Answer these questions from the tables of E1, yours and ours; the ratios in the questions are ours. Then open the box:
 
 1. NumPy computes each dot product of "one dot product per pair" in C. Why is that way only about twice as fast as plain Python?
 2. One row per step takes 1,024 steps, one outer product per step only 64. Why are the outer products slower?
@@ -567,8 +576,8 @@ Answer these questions from the table, then open the box:
 <summary>Check your reasoning</summary>
 
 1. Every step of a Python loop costs time of its own: for each multiplication, the interpreter runs about ten bytecode instructions, checks the types and makes a new float object. One call of NumPy costs about as much as a short loop of Python: here, a call for 64 multiplications took about half as long as the 64 steps in plain Python, so a million calls saved only half the time. A NumPy call pays off when it gets a lot of work.
-2. Each outer product is a full [1024, 1024] matrix, 4 MB, which NumPy writes and then adds to S, reading and writing S's 4 MB once more: 64 times, about a gigabyte moved through memory for 67 million multiplications. A row of S is 4 KB and is written once. Fewer steps help only while the work per step does not turn into memory traffic.
-3. It builds every product at once in a [1024, 1024, 64] array, 256 MB, and then sums it. Memory, not arithmetic, sets its time.
+2. Each outer product is a full [1024, 1024] matrix, 4.2 MB, which NumPy writes and then adds to S, reading and writing S's 4.2 MB once more: 64 times, about a gigabyte moved through memory for 67 million multiplications. A row of S is 4,096 bytes and is written once. Fewer steps help only while the work per step does not turn into memory traffic.
+3. It builds every product at once in a [1024, 1024, 64] array, 268 MB, and then sums it. Memory, not arithmetic, sets its time.
 4. NumPy hands only float32, float64 and complex numbers to BLAS. For whole numbers it runs its own plain triple loop in C, without the tricks of BLAS (part F links both).
 5. A float64 number takes 8 bytes instead of 4: twice the memory traffic, and a 256-bit vector register holds 4 of them instead of 8, so every instruction does half the work.
 
@@ -576,7 +585,7 @@ Answer these questions from the table, then open the box:
 
 ### E3. Threads and heads
 
-The second table of `uv run numpy-timings` times one `@` with 1, 2, 4, 8 and all BLAS threads, each in a fresh Python; the third compares twelve heads in a loop of twelve `@` with one `@` on their stack, [12, T, 64]. How much do more threads help? Why does `attention_lab` set four threads (read the comment in [`__init__.py`](../../attention_lab/src/eaas_attention_lab/__init__.py))? And why does the stack win clearly for T = 9 but hardly for T = 1024?
+The second table of `uv run numpy-timings` times one `@` with 1, 2, 4, 8 and all BLAS threads, each in a fresh Python; the third compares twelve heads in a loop of twelve `@` with one `@` on their stack, [12, T, 64]. How much do more threads help? Why does `attention_lab` set four threads (read the comment in [`__init__.py`](../../attention_lab/src/eaas_attention_lab/__init__.py))? And why does the stack win clearly for T = 9 but hardly for T = 1024? On an Apple Silicon Mac with macOS 14 or newer, NumPy uses Apple's Accelerate instead of OpenBLAS (F4), and the command says so instead of timing the threads: answer the first question from our table in the box.
 
 <details>
 <summary>Check your reasoning</summary>
@@ -595,13 +604,13 @@ Twelve heads, a loop of 12 @ against one @ on their stack:
   T = 9     the loop   21.6 µs, the stack    8.2 µs: the stack is 2.6 x as fast
 ```
 
-More threads helped up to about four, then hardly at all for a product of this size: there is not enough work to split further, and starting threads costs time. NumPy runs its own loops on one thread; only BLAS uses several. The lab sets `OPENBLAS_NUM_THREADS` to 4 before NumPy loads, because OpenBLAS reads it only once, when it starts. On a busy laptop, all 20 threads made a forward pass much slower. The stack saves the Python loop over the heads, twelve steps: that matters when each product is tiny, as for 9 tokens, and hardly when each one takes a millisecond. NumPy then loops over the twelve matrices in C and calls BLAS for each.
+More threads helped up to about four, then hardly at all for a product of this size: there is not enough work to split further, and waking and coordinating the threads costs time. NumPy runs its own loops on one thread; only BLAS uses several. The lab sets `OPENBLAS_NUM_THREADS` to 4 before NumPy loads, because OpenBLAS reads it only once, when it starts. That holds for the lab's commands, which import the lab first. Your REPL imports NumPy first, so there OpenBLAS keeps one thread per logical CPU, even once a later import of the lab has set the variable. On a busy laptop, all 20 threads made a forward pass much slower. The stack saves the Python loop over the heads, twelve steps: that matters when each product is tiny, as for 9 tokens, and hardly when each one takes a millisecond. NumPy then loops over the twelve matrices in C and calls BLAS for each.
 
 </details>
 
 ### ★ Other sizes
 
-Predict first: with 256 tokens, and with 4,096, is plain Python more or less times slower than one `@` than with 1,024? And one row per step, one outer product per step? Then run `uv run numpy-timings --tokens 256` and `uv run numpy-timings --tokens 4096`; the second takes about a minute, half of it plain Python.
+Predict first: with 256 tokens, and with 4,096, is plain Python more or less times slower than one `@` than with 1,024? And one row per step, one outer product per step? Then run `uv run numpy-timings --tokens 256` and `uv run numpy-timings --tokens 4096`; the second takes about a minute, half of it plain Python, and about 1.5 GB of memory.
 
 <details>
 <summary>Check your reasoning</summary>
@@ -638,16 +647,17 @@ one @ on float64 (BLAS)                            1    26.4 ms       2.1 x  Tru
 one @ on float32 (BLAS)                            1    12.6 ms       1.0 x  True
 ```
 
-The loops in plain Python and one `@` both do T × T × d_h multiplications, so their ratio stays about the same, a few thousand: larger arrays do not rescue a loop in Python. The ways that move memory in each step change instead. An outer product of 256 tokens, 256 KB, fits in the cache of one core (on our laptop, 1.25 MB per performance core), one of 4,096 tokens, 64 MB, not even in the 24 MB that all cores share, so the outer products fall further behind. A row of 4,096 scores carries four times the work of a row of 1,024 for the same cost per step, so the rows catch up. With 4,096 tokens, broadcasting is left out: its [T, T, d_h] array would take 4.3 GB.
+The loops in plain Python and one `@` both do T × T × d_h multiplications, so their ratio stays about the same, a few thousand: larger arrays do not rescue a loop in Python. The ways that move memory in each step change instead. An outer product of 256 tokens, 256 KB, fits in the cache of one core (on our laptop, 1.25 MB per performance core), one of 4,096 tokens, 64 MB, not even in the 24 MB that all cores share, so the outer products fall further behind. A row of 1,024 scores carries four times the work of a row of 256 for the same cost per step, so from 256 to 1,024 tokens the rows catch up, from 7.6 to 5.5 times one `@`. With 4,096 they stay at about 5.5 times: the cost per step hardly counts any more, and each step still reads all of K, 1 MB at 4,096 tokens, while one `@` uses each number of K it loads for many rows of Q. With 4,096 tokens, broadcasting is left out: its [T, T, d_h] array would take 4.3 GB.
 
 </details>
 
 ### ★ `q @ q.T` is not `q @ k.T`
 
-`q @ q.T` multiplies a matrix with its own transpose: the result is symmetric, so half of it would be enough. Predict which line is fastest, then time them in the REPL, with the same shapes:
+`q @ q.T` multiplies a matrix with its own transpose: the result is symmetric, so half of it would be enough. Slide 18 showed `q @ q.T` slower than `q @ k.T` on our laptop. Predict whether `q @ q.T.copy()` is slow too, then time all three in a fresh REPL that imports the lab first, so that its 4 BLAS threads apply (E3):
 
 ```python
-import timeit
+import eaas_attention_lab
+import numpy as np, timeit
 rng = np.random.default_rng(0)
 q = rng.standard_normal((1024, 64)).astype(np.float32)
 k = rng.standard_normal((1024, 64)).astype(np.float32)
@@ -659,7 +669,7 @@ min(timeit.repeat(lambda: q @ q.T.copy(), number=1, repeat=50))
 <details>
 <summary>Check your reasoning</summary>
 
-Our run, on 26 November 2026:
+Our run, on 26 November 2026, with the lab's 4 BLAS threads:
 
 <!-- timings: estar -->
 ```text
@@ -675,9 +685,9 @@ When both operands of `@` are the same block and one is the transpose of the oth
 
 ## Part F: look inside NumPy
 
-About 15 to 20 minutes.
+About 20 to 30 minutes.
 
-NumPy is open source, and its code can be read: [github.com/numpy/numpy](https://github.com/numpy/numpy/tree/v2.5.4). The links below are pinned to version 2.5.4, which `uv sync` installs for Python 3.12 and newer; the files and line numbers are the same in 2.5.5.
+NumPy is open source, and its code can be read: [github.com/numpy/numpy](https://github.com/numpy/numpy/tree/v2.5.4). The links below are pinned to version 2.5.4, which `uv sync` installs for Python 3.12 and newer; the files and line numbers are the same in 2.5.5. More code behind the slides, to read along with part A and slide 14: [ctors.c, lines 4128 to 4136](https://github.com/numpy/numpy/blob/v2.5.4/numpy/_core/src/multiarray/ctors.c#L4128-L4136), the strides of a new array (A3); [mapping.c, lines 830 to 843](https://github.com/numpy/numpy/blob/v2.5.4/numpy/_core/src/multiarray/mapping.c#L830-L843), `a[i, j]` at the data plus index times stride (A4); [arrayobject.c, lines 1263 to 1283](https://github.com/numpy/numpy/blob/v2.5.4/numpy/_core/src/multiarray/arrayobject.c#L1263-L1283), the class `numpy.ndarray`; [loops_exponent_log.dispatch.c.src, lines 384 to 407](https://github.com/numpy/numpy/blob/v2.5.4/numpy/_core/src/umath/loops_exponent_log.dispatch.c.src#L384-L407), `np.exp` for float32 with vector instructions.
 
 ### F1. The struct of an array
 
@@ -720,12 +730,12 @@ True
 
 <!-- input: f2 -->
 ```python
-type(np.matmul), type(np.exp), type(np.add)
+type(np.matmul), type(np.exp), type(np.dot)
 np.matmul.signature
 np.matmul.nin, np.matmul.nout
 "ff->f" in np.matmul.types, "ii->i" in np.matmul.types, "ee->e" in np.matmul.types
 a = np.arange(6, dtype=np.float32).reshape(2, 3)
-np.sum(a, axis=0), np.add.reduce(a, axis=0)
+np.prod(a, axis=0), np.multiply.reduce(a, axis=0)
 ```
 
 <details>
@@ -733,8 +743,8 @@ np.sum(a, axis=0), np.add.reduce(a, axis=0)
 
 <!-- session: f2 setup=np -->
 ```pycon
->>> type(np.matmul), type(np.exp), type(np.add)
-(<class 'numpy.ufunc'>, <class 'numpy.ufunc'>, <class 'numpy.ufunc'>)
+>>> type(np.matmul), type(np.exp), type(np.dot)
+(<class 'numpy.ufunc'>, <class 'numpy.ufunc'>, <class 'numpy._ArrayFunctionDispatcher'>)
 >>> np.matmul.signature
 '(n?,k),(k,m?)->(n?,m?)'
 >>> np.matmul.nin, np.matmul.nout
@@ -742,11 +752,11 @@ np.sum(a, axis=0), np.add.reduce(a, axis=0)
 >>> "ff->f" in np.matmul.types, "ii->i" in np.matmul.types, "ee->e" in np.matmul.types
 (True, True, True)
 >>> a = np.arange(6, dtype=np.float32).reshape(2, 3)
->>> np.sum(a, axis=0), np.add.reduce(a, axis=0)
-(array([3., 5., 7.], dtype=float32), array([3., 5., 7.], dtype=float32))
+>>> np.prod(a, axis=0), np.multiply.reduce(a, axis=0)
+(array([ 0.,  4., 10.], dtype=float32), array([ 0.,  4., 10.], dtype=float32))
 ```
 
-A ufunc runs a loop in C, chosen by the dtypes of its inputs: `"ff->f"` is the loop for float32, `"ii->i"` for int32, `"ee->e"` for float16. `np.exp` and `np.add` loop over numbers; `np.matmul` is a generalized ufunc, whose loop works on whole matrices: its signature `(n?,k),(k,m?)->(n?,m?)` says that the last axis of the left operand meets the first of the two last axes of the right one, and the `?` lets a 1-D operand stand in for a row or a column. Every axis before the last two is a stack, which is how `@` multiplies twelve heads at once. `np.sum` is a reduction with `np.add` ([fromnumeric.py, lines 2463 to 2466](https://github.com/numpy/numpy/blob/v2.5.4/numpy/_core/fromnumeric.py#L2463-L2466)).
+A ufunc runs a loop in C, chosen by the dtypes of its inputs: `"ff->f"` is the loop for float32, `"ee->e"` for float16, and `"ii->i"` for C int, 32 bits wide. The letters name C types: on Linux and macOS int32 is C int, `i`; on Windows it is C long, `l`, also 32 bits wide there, so an int32 `@` runs `"ll->l"`; `np.dtype(np.int32).char` shows the letter of yours. `np.dot` is a plain function, not a ufunc. `np.exp` loops over numbers; `np.matmul` is a generalized ufunc, whose loop works on whole matrices: its signature `(n?,k),(k,m?)->(n?,m?)` says that the last axis of the left operand meets the first of the two last axes of the right one, and the `?` lets a 1-D operand stand in for a row or a column. Every axis before the last two is a stack, which is how `@` multiplies twelve heads at once. `np.prod` is a reduction with `np.multiply`, as `np.sum` is one with `np.add` ([fromnumeric.py, lines 2463 to 2466](https://github.com/numpy/numpy/blob/v2.5.4/numpy/_core/fromnumeric.py#L2463-L2466)).
 
 </details>
 

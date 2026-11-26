@@ -127,15 +127,6 @@ T_CHECK: int = 9  # the tokens of the checks: as many as the check text of my_nu
 D_H_CHECK: int = 4  # the width of one head of the tiny GPT-2
 
 
-def new_strides(
-    shape: tuple[int, ...], itemsize: int, order: str = "C"
-) -> tuple[int, ...]:
-    """The strides of a new array, read from NumPy: order "C" row by row, "F" not."""
-    if order == "F":
-        return np.empty(shape, dtype=f"u{itemsize}", order="F").strides
-    return np.empty(shape, dtype=f"u{itemsize}").strides
-
-
 def c_strides_cases() -> list[checks.Case]:
     """Shapes of the slides and of GPT-2, with the hints of three typical mistakes."""
     cases = []
@@ -151,12 +142,12 @@ def c_strides_cases() -> list[checks.Case]:
         ((2, 3, 4, 5), 1, "four axes, one byte per number"),
         ((3, 1, 4), 4, "an axis of length 1 gets a stride too"),
     ):
-        right = new_strides(shape, itemsize)
+        right = np.empty(shape, dtype=f"u{itemsize}").strides  # as NumPy sets them
         mistakes: dict[str, object] = {
             "that is column by column, as in Fortran: a new NumPy array lies row by "
-            "row, so the last axis has the smallest stride": new_strides(
-                shape, itemsize, "F"
-            ),
+            "row, so the last axis has the smallest stride": np.empty(
+                shape, dtype=f"u{itemsize}", order="F"
+            ).strides,
             "strides count bytes, not numbers: multiply by itemsize": tuple(
                 stride // itemsize for stride in right
             ),
@@ -182,7 +173,7 @@ def where_numpy_finds(a: Array, index: tuple[int, ...]) -> int:
 
 def byte_offset_cases() -> list[checks.Case]:
     """Arrays of the slides and of gpt2.py, views among them."""
-    qkv = np.empty((6, 144), dtype=np.float32)  # like qkv of the tiny GPT-2, 6 tokens
+    wide = np.empty((5, 40), dtype=np.float32)  # rows of 40 numbers, 160 bytes
     block = np.empty((3, 4), dtype=np.float32)
     cases = []
     for a, index, hint in (
@@ -197,9 +188,9 @@ def byte_offset_cases() -> list[checks.Case]:
             "three axes: a step along each, each with its own stride",
         ),
         (
-            qkv[:, 64:68],
-            (5, 3),
-            "the keys of head 4 are a window into qkv: their rows lie 576 bytes apart",
+            wide[:, 8:12],
+            (4, 3),
+            "a window into a wider block: its rows lie as far apart as the block's",
         ),
         (block[::-1], (2, 1), "the rows run backwards: a negative stride steps back"),
         (block.T, (3, 2), "after .T, axis 0 steps 4 bytes and axis 1 steps 16"),
@@ -210,7 +201,7 @@ def byte_offset_cases() -> list[checks.Case]:
 
 def transposed_cases() -> list[checks.Case]:
     """Transposes of the slides and of gpt2.py: split_heads and the scores."""
-    stack = np.empty((6, 144), dtype=np.float32)[:, :48].reshape(6, 12, 4)
+    stack = np.empty((6, 48), dtype=np.float32).reshape(6, 12, 4)  # T, heads, d_h
     heads = stack.transpose(1, 0, 2)  # what split_heads returns
     cases = []
     for a, axes, hint in (
@@ -264,8 +255,8 @@ def is_contiguous_cases() -> list[checks.Case]:
         (np.empty((2, 3)), "a new array lies row by row"),
         (np.empty((2, 3)).T, "after .T the block is read column by column"),
         (
-            np.empty((6, 144), dtype=np.float32)[:, 64:68],
-            "a window: after 4 numbers, the next row starts 576 bytes further",
+            np.empty((5, 40), dtype=np.float32)[:, 8:12],
+            "a window: after 4 numbers, the next row starts 160 bytes further",
         ),
         (np.empty((12, 6, 4), dtype=np.float32)[3], "one head of a new stack"),
         (np.empty((3, 4), dtype=np.float32)[::-1], "the rows run backwards"),
