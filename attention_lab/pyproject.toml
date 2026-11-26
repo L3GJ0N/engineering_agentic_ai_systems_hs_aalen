@@ -20,6 +20,8 @@ attention-sink = "eaas_attention_lab.commands.attention_sink:main"
 numpy-timings = "eaas_attention_lab.commands.numpy_timings:main"
 # The exercise of exercises/one_head: your code, checked.
 my-head = "eaas_attention_lab.exercises.my_head:main"
+# The exercise of exercises/numpy_basics: your functions, checked.
+my-numpy-basics = "eaas_attention_lab.exercises.my_numpy_basics:main"
 # The exercise of exercises/numpy_inside: your functions, checked and timed.
 my-numpy-inside = "eaas_attention_lab.exercises.my_numpy_inside:main"
 # The exercise of exercises/numpy_for_attention: your NumPy, checked.
