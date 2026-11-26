@@ -25,13 +25,14 @@ Python teaching examples for the master's course **Engineering Agentic AI System
 - Three short, explained scripts: where W_Q, W_K, W_V and W_O are in the model file; one attention head computed by hand for "the cat sat on it"; and why most heads put their weight on the first token.
 - The whole model in about 100 lines of NumPy, keeping the matrices of every attention head, and checked against the reference implementation.
 - Figures of the matrices, saved as PNG files.
-- The starters of three exercises, on one head and two on NumPy, with checks that run before the model is downloaded, and `uv run numpy-timings`, which times one computation done nine ways.
+- The starters of four exercises, on one head and three on NumPy, with checks that run before the model is downloaded, and `uv run numpy-timings`, which times one computation done nine ways.
 
 ## Exercises
 
 - [Token viewer](exercises/token_viewer/README.md): a group exercise in class. Each group builds a token viewer for chat requests, in Python, starting from its own copy of a template repository. The task sheet says what to deliver and how the presentation works.
 - [One attention head, up close](exercises/one_head/README.md): an exercise for 15 to 30 minutes on your own. Predict and explore what one head of GPT-2 small does, then write parts of it in `attention_lab`, where `uv run my-head` checks your code, with or without the model downloaded.
-- [Inside NumPy](exercises/numpy_inside/README.md): an exercise on your own, alongside the session of 26 November; do it first. What an array is in memory, views and copies, and why one `@` beats a Python loop, measured with `uv run numpy-timings`; `uv run my-numpy-inside` checks and times your code. Six parts, about 100 to 120 minutes.
+- [NumPy basics](exercises/numpy_basics/README.md): an exercise on your own, alongside the session of 26 November; do it first. Arrays, shape and dtype, indexing, `*` and `@`, broadcasting with `axis` and `keepdims`, the shapes `(5,)`, `(5, 1)`, `(1, 5)` and `(1, 1)`, and NumPy's timings, read from `uv run numpy-timings`; `uv run my-numpy-basics` checks your code. Six parts, about 85 to 100 minutes.
+- [Inside NumPy](exercises/numpy_inside/README.md): an optional deep dive for that session. What an array is in memory, views and copies, and why one `@` beats a Python loop, measured with `uv run numpy-timings`; `uv run my-numpy-inside` checks and times your code. Six parts, about 110 to 140 minutes.
 - [NumPy for the attention lab](exercises/numpy_for_attention/README.md): the second exercise of that session. The NumPy that `gpt2.py` uses, on the lab's own arrays, in the Python REPL and in `attention_lab`, where `uv run my-numpy` checks your code on the tiny GPT-2, without a download. Parts A to D take 50 to 70 minutes, part E 20 to 30 minutes more.
 
 ## Start here
@@ -154,6 +155,8 @@ engineering_agentic_ai_systems_hs_aalen/
             target_page.png      the picture on the task sheet
             samples/             the course request's messages as JSON
         one_head/
+            README.md            the task sheet; the starter is in attention_lab
+        numpy_basics/
             README.md            the task sheet; the starter is in attention_lab
         numpy_inside/
             README.md            the task sheet; the starter is in attention_lab

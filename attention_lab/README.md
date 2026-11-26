@@ -39,9 +39,11 @@ To try another text, layer or head, change `TEXT`, `LAYER` or `HEAD` at the top 
 
 [One attention head, up close](../exercises/one_head/README.md) is an exercise for 15 to 30 minutes on your own: predict what one head does, explore it, then write parts of it in [my_head.py](src/eaas_attention_lab/exercises/my_head.py). `uv run my-head` checks your code against the forward pass. It needs no download: without GPT-2 small, it runs a tiny GPT-2 with random weights, which has GPT-2 small's 12 layers of 12 heads but knows only 49 words.
 
-[Inside NumPy](../exercises/numpy_inside/README.md) looks inside NumPy itself: what an array is in memory, its header and strides, views and copies, and why one `@` is so much faster than a loop, with `uv run numpy-timings`. You write seven functions in [my_numpy_inside.py](src/eaas_attention_lab/exercises/my_numpy_inside.py), which `uv run my-numpy-inside` checks against what NumPy computes, and times.
+[NumPy basics](../exercises/numpy_basics/README.md) teaches the NumPy you need first: arrays, shape and dtype, indexing, `*` and `@`, broadcasting with `axis` and `keepdims`, and the shapes `(5,)`, `(5, 1)`, `(1, 5)` and `(1, 1)`; it ends with the table of `uv run numpy-timings`. You write six small functions in [my_numpy_basics.py](src/eaas_attention_lab/exercises/my_numpy_basics.py), which `uv run my-numpy-basics` checks.
 
-[NumPy for the attention lab](../exercises/numpy_for_attention/README.md) then teaches the NumPy that `gpt2.py` uses, on the lab's own arrays: in the Python REPL, and in [my_numpy.py](src/eaas_attention_lab/exercises/my_numpy.py), which `uv run my-numpy` checks on the tiny GPT-2. Neither needs a download.
+[Inside NumPy](../exercises/numpy_inside/README.md), an optional deep dive, looks inside NumPy itself: what an array is in memory, its header and strides, views and copies, and why one `@` is so much faster than a loop, with `uv run numpy-timings`. You write seven functions in [my_numpy_inside.py](src/eaas_attention_lab/exercises/my_numpy_inside.py), which `uv run my-numpy-inside` checks against what NumPy computes, and times.
+
+[NumPy for the attention lab](../exercises/numpy_for_attention/README.md) then teaches the NumPy that `gpt2.py` uses, on the lab's own arrays: in the Python REPL, and in [my_numpy.py](src/eaas_attention_lab/exercises/my_numpy.py), which `uv run my-numpy` checks on the tiny GPT-2. None of the three needs a download.
 
 ## What you see
 
@@ -65,6 +67,7 @@ src/eaas_attention_lab/
         numpy_timings.py    uv run numpy-timings
     exercises/              what you complete, one exercise per file
         my_head.py          uv run my-head
+        my_numpy_basics.py  uv run my-numpy-basics
         my_numpy_inside.py  uv run my-numpy-inside
         my_numpy.py         uv run my-numpy
 ```

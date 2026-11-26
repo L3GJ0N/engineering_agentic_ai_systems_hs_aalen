@@ -1,6 +1,6 @@
 # Exercise: Inside NumPy
 
-NumPy is the library behind `gpt2.py`: one type, the n-dimensional array, written in C, and the functions around it. This exercise looks inside it. What an array is in memory, how its header reads its block of numbers, which lines copy and which do not, and why one `@` is a thousand times faster than a Python loop, measured on your laptop. Afterwards you can say what NumPy does for every line you write, and why it is fast or slow. The exercise [NumPy for the attention lab](../numpy_for_attention/README.md) then applies all of it to GPT-2; do this one first.
+NumPy is the library behind `gpt2.py`: one type, the n-dimensional array, written in C, and the functions around it. This exercise looks inside it. What an array is in memory, how its header reads its block of numbers, which lines copy and which do not, and why one `@` is a thousand times faster than a Python loop, measured on your laptop. Afterwards you can say what NumPy does for every line you write, and why it is fast or slow. This exercise is an optional deep dive: do [NumPy basics](../numpy_basics/README.md) first; [NumPy for the attention lab](../numpy_for_attention/README.md), which applies NumPy to GPT-2, can come before or after it. Parts E and F start where part F of NumPy basics ends, with the same table of `uv run numpy-timings` and the same struct: skim what you know from there.
 
 You work alone. Six parts, A to F, take about 110 to 140 minutes in all without the ★ tasks, which add about half an hour; finish at home what the session leaves. Tasks marked ★ are optional. Everything runs on your laptop's CPU, with random numbers and without any download.
 
@@ -533,7 +533,7 @@ About 20 to 25 minutes.
 
 ### E1. Predict, then measure
 
-`uv run numpy-timings` computes the scores of one head, S = Q Kᵀ for T = 1024 tokens and d_h = 64, in nine ways, from three loops in plain Python to one `@` on float32, the way `gpt2.py` does it. Read the nine ways in [numpy_timings.py](../../attention_lab/src/eaas_attention_lab/commands/numpy_timings.py). Slide 17 showed our laptop's table. Before you run it, predict which rows will come out differently on yours, and why: another processor, another BLAS, more or fewer cores. Then run it in the terminal, not in the REPL; it takes about 15 seconds:
+`uv run numpy-timings` computes the scores of one head, S = Q Kᵀ for T = 1024 tokens and d_h = 64, in nine ways, from three loops in plain Python to one `@` on float32, the way `gpt2.py` does it. Read the nine ways in [numpy_timings.py](../../attention_lab/src/eaas_attention_lab/commands/numpy_timings.py). Slide 18 showed our laptop's table. Before you run it, predict which rows will come out differently on yours, and why: another processor, another BLAS, more or fewer cores. Then run it in the terminal, not in the REPL; it takes about 15 seconds:
 
 ```console
 uv run numpy-timings
@@ -585,7 +585,7 @@ Answer these questions from the tables of E1, yours and ours; the ratios in the 
 
 ### E3. Threads and heads
 
-The second table of `uv run numpy-timings` times one `@` with 1, 2, 4, 8 and all BLAS threads, each in a fresh Python; the third compares twelve heads in a loop of twelve `@` with one `@` on their stack, [12, T, 64]. How much do more threads help? Why does `attention_lab` set four threads (read the comment in [`__init__.py`](../../attention_lab/src/eaas_attention_lab/__init__.py))? And why does the stack win clearly for T = 9 but hardly for T = 1024? On an Apple Silicon Mac with macOS 14 or newer, NumPy uses Apple's Accelerate instead of OpenBLAS (F4), and the command says so instead of timing the threads: answer the first question from our table in the box.
+The second table of `uv run numpy-timings` times one `@` with 1, 2, 4, 8 and all BLAS threads, each in a fresh Python; the third compares twelve heads in a loop of twelve `@` with one `@` on their stack, [12, T, 64]. How much do more threads help? Why does `attention_lab` set four threads (read the comment in [`__init__.py`](../../attention_lab/src/eaas_attention_lab/__init__.py))? And why does the stack win clearly for T = 9 but hardly for T = 1024? On a Mac with macOS 14 or newer, NumPy uses Apple's Accelerate instead of OpenBLAS (F4), and the command says so instead of timing the threads: answer the first question from our table in the box.
 
 <details>
 <summary>Check your reasoning</summary>
@@ -619,7 +619,7 @@ Our runs on 26 November 2026, the nine ways only:
 
 <!-- timings: size256 -->
 ```text
-Other sizes, T = 256:
+The scores of one head, S = Q K^T: Q and K are [256, 64], float32, S is [256, 256]
 Way                                  Steps in Python       Time   vs. one @  Same
 Python: three loops over lists             4,194,304     123 ms     1,871 x  True
 NumPy, one dot product per pair               65,536    60.9 ms       930 x  True
@@ -634,7 +634,7 @@ one @ on float32 (BLAS)                            1    65.5 µs       1.0 x  Tr
 
 <!-- timings: size4096 -->
 ```text
-Other sizes, T = 4096:
+The scores of one head, S = Q K^T: Q and K are [4096, 64], float32, S is [4096, 4096]
 Way                                  Steps in Python       Time   vs. one @  Same
 Python: three loops over lists         1,073,741,824     33.6 s     2,659 x  True
 NumPy, one dot product per pair           16,777,216     17.1 s     1,354 x  True
@@ -653,7 +653,7 @@ The loops in plain Python and one `@` both do T × T × d_h multiplications, so 
 
 ### ★ `q @ q.T` is not `q @ k.T`
 
-`q @ q.T` multiplies a matrix with its own transpose: the result is symmetric, so half of it would be enough. Slide 18 showed `q @ q.T` slower than `q @ k.T` on our laptop. Predict whether `q @ q.T.copy()` is slow too, then time all three in a fresh REPL that imports the lab first, so that its 4 BLAS threads apply (E3):
+`q @ q.T` multiplies a matrix with its own transpose: the result is symmetric, so half of it would be enough. Slide 47, in the appendix of the deck, showed `q @ q.T` slower than `q @ k.T` on our laptop. Predict whether `q @ q.T.copy()` is slow too, then time all three in a fresh REPL that imports the lab first, so that its 4 BLAS threads apply (E3):
 
 ```python
 import eaas_attention_lab
@@ -687,7 +687,7 @@ When both operands of `@` are the same block and one is the transpose of the oth
 
 About 20 to 30 minutes.
 
-NumPy is open source, and its code can be read: [github.com/numpy/numpy](https://github.com/numpy/numpy/tree/v2.5.4). The links below are pinned to version 2.5.4, which `uv sync` installs for Python 3.12 and newer; the files and line numbers are the same in 2.5.5. More code behind the slides, to read along with part A and slide 14: [ctors.c, lines 4128 to 4136](https://github.com/numpy/numpy/blob/v2.5.4/numpy/_core/src/multiarray/ctors.c#L4128-L4136), the strides of a new array (A3); [mapping.c, lines 830 to 843](https://github.com/numpy/numpy/blob/v2.5.4/numpy/_core/src/multiarray/mapping.c#L830-L843), `a[i, j]` at the data plus index times stride (A4); [arrayobject.c, lines 1263 to 1283](https://github.com/numpy/numpy/blob/v2.5.4/numpy/_core/src/multiarray/arrayobject.c#L1263-L1283), the class `numpy.ndarray`; [loops_exponent_log.dispatch.c.src, lines 384 to 407](https://github.com/numpy/numpy/blob/v2.5.4/numpy/_core/src/umath/loops_exponent_log.dispatch.c.src#L384-L407), `np.exp` for float32 with vector instructions.
+NumPy is open source, and its code can be read: [github.com/numpy/numpy](https://github.com/numpy/numpy/tree/v2.5.4). The links below are pinned to version 2.5.4, which `uv sync` installs for Python 3.12 and newer; the files and line numbers are the same in 2.5.5. More code behind the slides, to read along with part A and slide 44 in the appendix: [ctors.c, lines 4128 to 4136](https://github.com/numpy/numpy/blob/v2.5.4/numpy/_core/src/multiarray/ctors.c#L4128-L4136), the strides of a new array (A3); [mapping.c, lines 830 to 843](https://github.com/numpy/numpy/blob/v2.5.4/numpy/_core/src/multiarray/mapping.c#L830-L843), `a[i, j]` at the data plus index times stride (A4); [arrayobject.c, lines 1263 to 1283](https://github.com/numpy/numpy/blob/v2.5.4/numpy/_core/src/multiarray/arrayobject.c#L1263-L1283), the class `numpy.ndarray`; [loops_exponent_log.dispatch.c.src, lines 384 to 407](https://github.com/numpy/numpy/blob/v2.5.4/numpy/_core/src/umath/loops_exponent_log.dispatch.c.src#L384-L407), `np.exp` for float32 with vector instructions.
 
 ### F1. The struct of an array
 
@@ -778,7 +778,7 @@ Which BLAS does your NumPy use, and which vector instructions does your processo
 <details>
 <summary>Check your reasoning</summary>
 
-Ours, NumPy 2.5.4 on Windows with an Intel Core i7-12700H, on 25 November 2026: BLAS `scipy-openblas` 0.3.34.106.0, an OpenBLAS that NumPy's wheels bring along; SIMD baseline `X86_V2`, found `X86_V3`, which includes AVX2 and FMA3, the 256-bit vector instructions. NumPy's wheels use OpenBLAS everywhere except on Apple Silicon Macs with macOS 14 or newer, which get Apple's Accelerate. `np.show_runtime()` also warns that `threadpoolctl` is not installed: that package would list the BLAS threads.
+Ours, NumPy 2.5.4 on Windows with an Intel Core i7-12700H, on 25 November 2026: BLAS `scipy-openblas` 0.3.34.106.0, an OpenBLAS that NumPy's wheels bring along; SIMD baseline `X86_V2`, found `X86_V3`, which includes AVX2 and FMA3, the 256-bit vector instructions. NumPy's wheels use OpenBLAS everywhere except on Macs with macOS 14 or newer, Apple Silicon and Intel alike, which get Apple's Accelerate (we read the build configuration of both wheels of 2.5.4 on 26 November 2026). `np.show_runtime()` also warns that `threadpoolctl` is not installed: that package would list the BLAS threads.
 
 </details>
 

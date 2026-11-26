@@ -6,14 +6,19 @@ empty: the solutions are not part of this repository.
 
 import importlib
 import tomllib
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from pathlib import Path
 
 import numpy as np
 import pytest
 
 from eaas_attention_lab import checks, model_files
-from eaas_attention_lab.exercises import my_head, my_numpy, my_numpy_inside
+from eaas_attention_lab.exercises import (
+    my_head,
+    my_numpy,
+    my_numpy_basics,
+    my_numpy_inside,
+)
 
 
 @pytest.fixture
@@ -160,6 +165,42 @@ def test_the_cases_of_my_numpy_inside_come_from_numpy() -> None:
     assert window.expected is True
 
 
+def test_my_numpy_basics_checks_six_stubs(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    my_numpy_basics.main()
+    output = capsys.readouterr().out
+    lines = [line.strip() for line in output.splitlines() if line[:4] == "    "]
+    verdicts = [line.split(":", 1)[1].strip() for line in lines]
+    assert verdicts == ["not written yet"] * 6
+
+
+@pytest.mark.parametrize(
+    ("name", "mistake", "hint"),
+    [
+        ("column", lambda m, j: m[:, j], "kept as a column"),
+        ("normalize_rows", lambda x: x / x.sum(axis=1), "keepdims=True"),
+        ("mse", lambda a, b: float(((a - b) ** 2).mean()), "5 x 5 table"),
+        ("mse", lambda a, b: np.ones((1, 1)), "return one number"),
+    ],
+)
+def test_typical_mistakes_of_my_numpy_basics_get_their_hints(
+    name: str,
+    mistake: Callable[..., object],
+    hint: str,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    # Mistakes only: the solutions are not part of this repository.
+    monkeypatch.setattr(my_numpy_basics, name, mistake)
+    my_numpy_basics.main()
+    output = capsys.readouterr().out
+    line = next(x for x in output.splitlines() if x.startswith(f"    {name}:"))
+    verdict = line.split(":", 1)[1].strip()
+    assert verdict.startswith("False")
+    assert hint in verdict
+
+
 def square(x: int) -> int:
     """A function to check case by case: right for 2, wrong for 3."""
     return 4 if x == 2 else 10
@@ -210,7 +251,8 @@ def test_every_command_of_pyproject_has_a_main() -> None:
     # uv run <name> calls these; a missing entry or module would fail only there.
     pyproject = Path(__file__).resolve().parents[1] / "pyproject.toml"
     scripts = tomllib.loads(pyproject.read_text(encoding="utf-8"))["project"]["scripts"]
-    assert {"my-numpy-inside", "numpy-timings", "my-numpy", "my-head"} <= set(scripts)
+    commands = {"my-numpy-basics", "my-numpy-inside", "numpy-timings", "my-numpy"}
+    assert commands | {"my-head"} <= set(scripts)
     for target in scripts.values():
         module, function = target.split(":")
         assert callable(getattr(importlib.import_module(module), function))
